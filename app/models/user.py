@@ -3,7 +3,7 @@
 import enum
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from datetime import datetime
 from app.database import Base
 
 
@@ -26,7 +26,7 @@ class User(Base):
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
     must_change_password = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
     school = relationship("School", back_populates="users")

@@ -2,7 +2,7 @@
 
 from sqlalchemy import Column, Integer, Boolean, Date, DateTime, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from datetime import datetime
 from app.database import Base
 
 
@@ -14,7 +14,7 @@ class Attendance(Base):
     date = Column(Date, nullable=False)
     is_present = Column(Boolean, default=True, nullable=False)
     marked_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     # Constraints
     __table_args__ = (

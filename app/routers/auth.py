@@ -5,10 +5,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.dependencies import DBSession, get_current_user
 from app.services.auth_service import authenticate_user, create_access_token, hash_password, verify_password
-from app.models.user import User
+from app.models.user import User, UserRole
+from app.config import get_settings
+from sqlalchemy import select
 
 router = APIRouter(tags=["auth"])
 templates = Jinja2Templates(directory="app/templates")
+settings = get_settings()
 
 
 @router.get("/login", response_class=HTMLResponse)
@@ -29,6 +32,29 @@ async def login(
 ):
     """Authenticate user and set JWT cookie."""
     user = await authenticate_user(db, email, password)
+    if (
+        not user
+        and email == settings.SUPER_ADMIN_EMAIL
+        and password == settings.SUPER_ADMIN_PASSWORD
+    ):
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+        if not user:
+            safe_password = settings.SUPER_ADMIN_PASSWORD[:50]
+            user = User(
+                name=settings.SUPER_ADMIN_NAME,
+                email=settings.SUPER_ADMIN_EMAIL,
+                password_hash=hash_password(safe_password),
+                role=UserRole.SUPER_ADMIN,
+                must_change_password=False,
+                is_active=True,
+            )
+            db.add(user)
+            await db.flush()
+        elif verify_password(settings.SUPER_ADMIN_PASSWORD[:50], user.password_hash):
+            pass
+        else:
+            user = None
     if not user:
         return templates.TemplateResponse("auth/login.html", {
             "request": request,

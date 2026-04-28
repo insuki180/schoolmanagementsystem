@@ -2,7 +2,7 @@
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from datetime import datetime
 from app.database import Base
 
 
@@ -14,7 +14,7 @@ class Student(Base):
     class_id = Column(Integer, ForeignKey("classes.id"), nullable=False, index=True)
     parent_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     # Constraints
     __table_args__ = (

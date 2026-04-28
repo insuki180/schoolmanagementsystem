@@ -17,6 +17,13 @@ router = APIRouter(prefix="/attendance", tags=["attendance"])
 templates = Jinja2Templates(directory="app/templates")
 
 
+@router.get("")
+async def attendance_index(
+    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN)),
+):
+    return RedirectResponse(url="/attendance/mark", status_code=303)
+
+
 @router.get("/mark", response_class=HTMLResponse)
 async def mark_attendance_page(request: Request, db: DBSession,
     class_id: int = None,

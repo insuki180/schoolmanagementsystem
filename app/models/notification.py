@@ -2,7 +2,7 @@
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Table
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from datetime import datetime
 from app.database import Base
 
 
@@ -24,7 +24,7 @@ class Notification(Base):
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=False)
     sent_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     is_school_wide = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
     school = relationship("School", back_populates="notifications")

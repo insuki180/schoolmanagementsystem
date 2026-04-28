@@ -5,26 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}SchoolMS{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}School Management System — manage students, attendance, marks and more.{% endblock %}">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-          colors: {
-            primary: {
-              50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc',
-              400:'#818cf8', 500:'#6366f1', 600:'#4f46e5', 700:'#4338ca',
-              800:'#3730a3', 900:'#312e81', 950:'#1e1b4b'
+    if (window.tailwind) {
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+            colors: {
+              primary: {
+                50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc',
+                400:'#818cf8', 500:'#6366f1', 600:'#4f46e5', 700:'#4338ca',
+                800:'#3730a3', 900:'#312e81', 950:'#1e1b4b'
+              }
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.3s ease-out',
+              'slide-up': 'slideUp 0.4s ease-out',
             }
-          },
-          animation: {
-            'fade-in': 'fadeIn 0.3s ease-out',
-            'slide-up': 'slideUp 0.4s ease-out',
           }
         }
       }
@@ -41,6 +44,7 @@
 
 {% if request.state.user is defined and request.state.user or (request.cookies.get('access_token')) %}
 {% set user = user if user is defined else None %}
+{% set role = user.role.value if user and user.role else None %}
 
 <!-- ═══════ MOBILE DRAWER OVERLAY ═══════ -->
 <div id="drawer-overlay" class="drawer-overlay" role="presentation">
@@ -129,9 +133,10 @@
         Dashboard
       </a>
 
-      {% if user and user.role and user.role.value in ['super_admin', 'school_admin'] %}
+      {% if role in ['super_admin', 'school_admin'] %}
       <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-white/30">Management</p>
 
+      {% if role == 'super_admin' %}
       <a href="/schools" data-nav-link
          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                 data-[active=true]:bg-white/20 data-[active=true]:text-white
@@ -141,7 +146,9 @@
         </svg>
         Schools
       </a>
+      {% endif %}
 
+      {% if role == 'school_admin' %}
       <a href="/classes" data-nav-link
          class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                 data-[active=true]:bg-white/20 data-[active=true]:text-white
@@ -153,6 +160,7 @@
       </a>
       {% endif %}
 
+      {% if role in ['school_admin', 'teacher'] %}
       <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-white/30">Academics</p>
 
       <a href="/attendance" data-nav-link
@@ -194,6 +202,21 @@
         </svg>
         Notifications
       </a>
+      {% endif %}
+
+      {% if role == 'parent' %}
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-white/30">Family</p>
+
+      <a href="/notifications" data-nav-link
+         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                data-[active=true]:bg-white/20 data-[active=true]:text-white
+                text-white/70 hover:text-white hover:bg-white/10">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+        </svg>
+        Notifications
+      </a>
+      {% endif %}
     </nav>
 
     <!-- Bottom actions -->
