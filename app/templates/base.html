@@ -272,7 +272,7 @@
 
     <!-- Page content -->
     <main class="flex-1 p-4 sm:p-6 fade-in" role="main">
-      {% block content %}{% endblock %}
+      {{ self.content() }}
     </main>
 
     <footer class="px-6 py-4 text-xs text-center border-t" style="color:var(--color-text-muted);border-color:var(--color-border)">
