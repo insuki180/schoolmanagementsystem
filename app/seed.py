@@ -27,10 +27,13 @@ async def seed():
         if existing:
             print(f"Super Admin already exists: {settings.SUPER_ADMIN_EMAIL}")
         else:
+            print("Using admin password length:", len(settings.SUPER_ADMIN_PASSWORD))
+            # bcrypt supports max 72 bytes, keep password safe
+            safe_password = settings.SUPER_ADMIN_PASSWORD[:50]
             admin = User(
                 name=settings.SUPER_ADMIN_NAME,
                 email=settings.SUPER_ADMIN_EMAIL,
-                password_hash=hash_password(settings.SUPER_ADMIN_PASSWORD),
+                password_hash=hash_password(safe_password),
                 role=UserRole.SUPER_ADMIN,
                 must_change_password=False,
                 is_active=True,
