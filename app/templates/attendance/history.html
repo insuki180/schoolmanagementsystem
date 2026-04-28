@@ -1,41 +1,117 @@
 {% extends "base.html" %}
 {% block title %}Attendance History — {{ student.name }}{% endblock %}
+{% block page_title %}Student History{% endblock %}
 {% block content %}
-<div class="fade-in">
-    <div class="mb-6">
-        <a href="/dashboard" class="text-primary-600 text-sm hover:underline">← Back</a>
-        <h1 class="text-2xl font-bold text-slate-800 mt-2">{{ student.name }}</h1>
-        <p class="text-slate-500 text-sm mt-1">Attendance History — Last 60 days</p>
+<div class="fade-in space-y-6">
+
+    <!-- Header & Back Navigation -->
+    <div>
+        <a href="javascript:history.back()" class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400 transition-colors mb-2">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+            </svg>
+            Back
+        </a>
+        <div class="flex items-center gap-4 mt-2">
+            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-500/20">
+                <span class="text-white font-bold text-xl">{{ student.name[0]|upper }}</span>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold" style="color:var(--color-text)">{{ student.name }}</h1>
+                <p class="text-sm mt-0.5" style="color:var(--color-text-muted)">Attendance History — Last 60 days</p>
+            </div>
+        </div>
     </div>
 
-    <!-- Summary -->
-    <div class="grid grid-cols-3 gap-3 mb-6">
-        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
-            <p class="text-2xl font-bold text-slate-800">{{ total }}</p>
-            <p class="text-xs text-slate-500 mt-1">Total Days</p>
+    <!-- Summary Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <!-- Total Days -->
+        <div class="rounded-2xl border p-5 shadow-sm slide-up flex flex-col items-center justify-center text-center" style="background:var(--color-surface);border-color:var(--color-border)">
+            <p class="text-3xl font-bold mb-1" style="color:var(--color-text)">{{ total }}</p>
+            <p class="text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Total Days</p>
         </div>
-        <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
-            <p class="text-2xl font-bold text-emerald-700">{{ present }}</p>
-            <p class="text-xs text-emerald-600 mt-1">Present</p>
+
+        <!-- Present Days -->
+        <div class="rounded-2xl border p-5 shadow-sm slide-up flex flex-col items-center justify-center text-center bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-800/30" style="animation-delay:0.1s">
+            <p class="text-3xl font-bold mb-1 text-emerald-600 dark:text-emerald-400">{{ present }}</p>
+            <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-500">Present</p>
         </div>
-        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
-            <p class="text-2xl font-bold {% if pct >= 75 %}text-emerald-600{% elif pct >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">{{ pct }}%</p>
-            <p class="text-xs text-slate-500 mt-1">Rate</p>
+
+        <!-- Attendance Rate -->
+        <div class="rounded-2xl border p-5 shadow-sm slide-up flex flex-col items-center justify-center text-center" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:0.2s">
+            <p class="text-3xl font-bold mb-1 
+                {% if pct >= 80 %}text-emerald-600 dark:text-emerald-400
+                {% elif pct >= 60 %}text-amber-500 dark:text-amber-400
+                {% else %}text-red-600 dark:text-red-400{% endif %}">
+                {{ pct }}%
+            </p>
+            <p class="text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Attendance Rate</p>
+            
+            <!-- Mini progress bar -->
+            <div class="w-24 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-3 overflow-hidden">
+                <div class="h-full rounded-full 
+                    {% if pct >= 80 %}bg-emerald-500
+                    {% elif pct >= 60 %}bg-amber-500
+                    {% else %}bg-red-500{% endif %}" 
+                    style="width: {{ pct }}%"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Records -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div class="divide-y divide-slate-50">
+    <!-- Detailed Records List -->
+    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border);background:var(--color-bg)">
+            <h2 class="font-semibold text-base flex items-center gap-2" style="color:var(--color-text)">
+                <svg class="w-4 h-4" style="color:var(--color-text-muted)" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                </svg>
+                Daily Records
+            </h2>
+        </div>
+
+        <div class="divide-y" style="border-color:var(--color-border-light)">
             {% for record in records %}
-            <div class="px-5 py-3 flex items-center justify-between">
-                <span class="text-sm text-slate-700">{{ record.date.strftime('%a, %b %d %Y') }}</span>
-                <span class="px-2.5 py-1 rounded-full text-xs font-semibold {% if record.is_present %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}">
-                    {% if record.is_present %}Present{% else %}Absent{% endif %}
-                </span>
+            <div class="px-6 py-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                <div class="flex items-center gap-4">
+                    <!-- Icon indicating status -->
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 
+                        {% if record.is_present %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500
+                        {% else %}bg-red-50 dark:bg-red-900/20 text-red-500{% endif %}">
+                        {% if record.is_present %}
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+                        </svg>
+                        {% else %}
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <span class="font-medium text-sm block" style="color:var(--color-text)">{{ record.date.strftime('%A') }}</span>
+                        <span class="text-xs" style="color:var(--color-text-muted)">{{ record.date.strftime('%b %d, %Y') }}</span>
+                    </div>
+                </div>
+
+                <!-- Status Badge -->
+                {% if record.is_present %}
+                <span class="badge badge-success px-3 py-1 text-xs uppercase tracking-wider">Present</span>
+                {% else %}
+                <span class="badge badge-error px-3 py-1 text-xs uppercase tracking-wider">Absent</span>
+                {% endif %}
             </div>
             {% else %}
-            <div class="p-8 text-center text-slate-400 text-sm">No records found</div>
+            <!-- Empty State -->
+            <div class="py-16 text-center">
+                <div class="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                </div>
+                <p class="font-semibold text-sm" style="color:var(--color-text)">No records found</p>
+                <p class="text-xs mt-1 text-center max-w-sm mx-auto" style="color:var(--color-text-muted)">No attendance records exist for this student in the last 60 days.</p>
+            </div>
             {% endfor %}
         </div>
     </div>

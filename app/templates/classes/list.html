@@ -1,54 +1,125 @@
 {% extends "base.html" %}
-{% block title %}Classes — SchoolMS{% endblock %}
+{% block title %}Classes & Subjects — SchoolMS{% endblock %}
+{% block page_title %}Classes & Subjects{% endblock %}
 {% block content %}
-<div class="fade-in">
-    <div class="flex items-center justify-between mb-6">
+<div class="fade-in space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-slate-800">Classes</h1>
-            <p class="text-slate-500 text-sm mt-1">Manage school classes and subjects</p>
+            <h1 class="text-2xl font-bold" style="color:var(--color-text)">Manage Classes</h1>
+            <p class="text-sm mt-1" style="color:var(--color-text-muted)">Configure academic classes and add new subjects to the curriculum.</p>
         </div>
     </div>
 
-    {% if error %}<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{{ error }}</div>{% endif %}
+    {% if error %}
+    <!-- Error Alert -->
+    <div class="p-4 rounded-xl border flex items-center gap-3 slide-up"
+         style="background:var(--color-surface);border-color:var(--color-border);border-left:4px solid #ef4444">
+        <div class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+        <p class="text-sm font-medium" style="color:var(--color-text)">{{ error }}</p>
+    </div>
+    {% endif %}
 
     {% if can_create %}
-    <div class="grid sm:grid-cols-2 gap-4 mb-6">
-        <!-- Add Class -->
-        <form method="POST" action="/classes" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <h3 class="font-semibold text-sm text-slate-700 mb-3">Add New Class</h3>
-            <div class="flex gap-2">
+    <div class="grid lg:grid-cols-2 gap-5">
+        <!-- Add Class Form -->
+        <form method="POST" action="/classes" class="rounded-2xl border shadow-sm p-6 slide-up" style="background:var(--color-surface);border-color:var(--color-border)">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+                    </svg>
+                </div>
+                <h3 class="font-semibold text-base" style="color:var(--color-text)">Create New Class</h3>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
                 <input type="text" name="name" required placeholder="e.g. Class 10-A"
-                    class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:border-primary-400">
-                <button type="submit" class="px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-all">Add</button>
+                    class="input-field flex-1">
+                <button type="submit" class="btn-primary shrink-0 justify-center">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    Add Class
+                </button>
             </div>
         </form>
-        <!-- Add Subject -->
-        <form method="POST" action="/classes/subjects" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-            <h3 class="font-semibold text-sm text-slate-700 mb-3">Add New Subject</h3>
-            <div class="flex gap-2">
+
+        <!-- Add Subject Form -->
+        <form method="POST" action="/classes/subjects" class="rounded-2xl border shadow-sm p-6 slide-up" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:0.1s">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                    </svg>
+                </div>
+                <h3 class="font-semibold text-base" style="color:var(--color-text)">Create New Subject</h3>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
                 <input type="text" name="name" required placeholder="e.g. Mathematics"
-                    class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:border-primary-400">
-                <button type="submit" class="px-5 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 transition-all">Add</button>
+                    class="input-field flex-1">
+                <button type="submit" class="shrink-0 justify-center px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-sm font-semibold rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all shadow-md shadow-purple-500/25 active:scale-[0.98] inline-flex items-center">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    Add Subject
+                </button>
             </div>
         </form>
     </div>
     {% endif %}
 
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for cls in classes %}
-        <a href="/classes/{{ cls.id }}" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md hover:border-primary-200 transition-all group">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-lg group-hover:bg-primary-200 transition-colors">📚</div>
-                <h3 class="font-semibold text-slate-800">{{ cls.name }}</h3>
-            </div>
-            <p class="text-xs text-primary-600 font-medium group-hover:underline">View Details →</p>
-        </a>
-        {% else %}
-        <div class="col-span-full bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center text-slate-400">
-            <p class="text-4xl mb-3">📚</p>
-            <p class="font-medium">No classes yet</p>
+    <!-- Classes Grid -->
+    <div class="mt-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold" style="color:var(--color-text)">All Active Classes</h2>
+            {% if classes %}
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border" style="border-color:var(--color-border)">
+                Total: {{ classes|length }}
+            </span>
+            {% endif %}
         </div>
-        {% endfor %}
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {% for cls in classes %}
+            <a href="/classes/{{ cls.id }}" class="card-hover group relative rounded-2xl border p-5 flex flex-col slide-up" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:{{ loop.index0 * 0.05 }}s">
+                <div class="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
+                
+                <div class="flex items-center gap-4 mb-4 relative z-10">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/30 text-primary-600 dark:text-primary-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg" style="color:var(--color-text)">{{ cls.name }}</h3>
+                        <p class="text-xs font-medium uppercase tracking-wider" style="color:var(--color-text-muted)">Class ID: {{ cls.id }}</p>
+                    </div>
+                </div>
+                
+                <div class="mt-auto pt-4 border-t relative z-10 flex items-center justify-between" style="border-color:var(--color-border-light)">
+                    <span class="text-sm font-semibold text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors">View Details</span>
+                    <svg class="w-4 h-4 text-primary-500 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                    </svg>
+                </div>
+            </a>
+            {% else %}
+            <div class="col-span-full rounded-2xl border border-dashed py-16 text-center" style="background:var(--color-surface);border-color:var(--color-border)">
+                <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+                    </svg>
+                </div>
+                <h3 class="font-semibold text-lg" style="color:var(--color-text)">No Classes Found</h3>
+                <p class="text-sm mt-1 max-w-sm mx-auto" style="color:var(--color-text-muted)">Get started by adding your first academic class using the form above.</p>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 </div>
 {% endblock %}

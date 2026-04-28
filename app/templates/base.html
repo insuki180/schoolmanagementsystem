@@ -1,174 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}School Management System{% endblock %}</title>
-    <meta name="description" content="Modern school management system for attendance, marks, and notifications">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' },
-                        surface: '#f8fafc',
-                    },
-                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-                }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}SchoolMS{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}School Management System — manage students, attendance, marks and more.{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            primary: {
+              50:'#eef2ff', 100:'#e0e7ff', 200:'#c7d2fe', 300:'#a5b4fc',
+              400:'#818cf8', 500:'#6366f1', 600:'#4f46e5', 700:'#4338ca',
+              800:'#3730a3', 900:'#312e81', 950:'#1e1b4b'
             }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-out',
+            'slide-up': 'slideUp 0.4s ease-out',
+          }
         }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/custom.css">
-    <style>
-        body { font-family: 'Inter', system-ui, sans-serif; }
-        .glass { background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-        .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        .slide-up { animation: slideUp 0.4s ease-out; }
-        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-        /* Hide scrollbar */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/css/custom.css" />
+  {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-slate-50 min-h-screen">
 
-{% if user is defined and user %}
-<!-- Desktop Sidebar -->
-<div class="hidden lg:flex">
-    <aside class="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-primary-800 to-primary-900 text-white z-40 flex flex-col shadow-2xl">
-        <!-- Logo -->
-        <div class="p-6 border-b border-primary-700/50">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg font-bold">🏫</div>
-                <div>
-                    <h1 class="font-bold text-lg leading-tight">SchoolMS</h1>
-                    <p class="text-xs text-primary-300 capitalize">{{ user.role.value if user.role.value is defined else user.role }}</p>
-                </div>
-            </div>
+<body class="min-h-screen font-sans antialiased" style="background:var(--color-bg);color:var(--color-text)">
+
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+{% if request.state.user is defined and request.state.user or (request.cookies.get('access_token')) %}
+{% set user = user if user is defined else None %}
+
+<!-- ═══════ MOBILE DRAWER OVERLAY ═══════ -->
+<div id="drawer-overlay" class="drawer-overlay" role="presentation">
+  <nav id="mobile-drawer" class="drawer-panel h-full overflow-y-auto"
+       style="background:linear-gradient(180deg,#312e81 0%,#1e1b4b 100%)"
+       aria-label="Mobile Navigation">
+
+    <div class="flex items-center justify-between p-4 border-b border-white/10">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+          </svg>
         </div>
+        <span class="font-bold text-white text-sm">SchoolMS</span>
+      </div>
+      <button id="drawer-close" class="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all" aria-label="Close navigation">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
 
-        <!-- Nav Links -->
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto no-scrollbar">
-            <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if request.url.path == '/dashboard' %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
-                <span class="text-lg">🏠</span> Dashboard
-            </a>
-
-            {% set role = user.role.value if user.role.value is defined else user.role %}
-            {% if role in ['teacher', 'school_admin'] %}
-            <a href="/attendance/mark" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/attendance' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
-                <span class="text-lg">📋</span> Attendance
-            </a>
-            {% endif %}
-
-            {% if role == 'parent' %}
-            <a href="/notifications" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/notifications' == request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
-                <span class="text-lg">🔔</span> Notifications
-            </a>
-            {% endif %}
-
-            {% if role in ['teacher', 'school_admin'] %}
-            <a href="/marks/entry" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/marks' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
-                <span class="text-lg">📊</span> Marks
-            </a>
-            <a href="/notifications/send" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/notifications' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
-                <span class="text-lg">🔔</span> Notifications
-            </a>
-            {% endif %}
-
-            {% if role in ['school_admin'] %}
-            <a href="/classes" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/classes' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
-                <span class="text-lg">🏫</span> Classes
-            </a>
-            <a href="/exams" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/exams' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
-                <span class="text-lg">📝</span> Exams
-            </a>
-            {% endif %}
-
-            {% if role == 'super_admin' %}
-            <a href="/schools" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/schools' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
-                <span class="text-lg">🏢</span> Schools
-            </a>
-            {% endif %}
-        </nav>
-
-        <!-- User Info -->
-        <div class="p-4 border-t border-primary-700/50">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
-                    {{ user.name[0]|upper }}
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium truncate">{{ user.name }}</p>
-                    <p class="text-xs text-primary-300 truncate">{{ user.email }}</p>
-                </div>
-            </div>
-            <a href="/logout" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary-300 hover:bg-white/10 hover:text-white transition-all">
-                <span>🚪</span> Sign Out
-            </a>
+    <div class="p-3">
+      {% if user %}
+      <div class="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl" style="background:rgba(255,255,255,0.08)">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-violet-500 flex items-center justify-center flex-shrink-0">
+          <span class="text-white font-bold text-sm">{{ (user.name or user.email)[0]|upper }}</span>
         </div>
-    </aside>
+        <div class="min-w-0">
+          <p class="text-white font-medium text-sm truncate">{{ user.name or user.email }}</p>
+          <p class="text-white/50 text-xs truncate">{{ user.role.value|title if user.role else '' }}</p>
+        </div>
+      </div>
+      {% endif %}
+      {% include 'partials/nav_links.html' ignore missing %}
+    </div>
+  </nav>
 </div>
 
-<!-- Mobile Top Bar -->
-<header class="lg:hidden fixed top-0 left-0 right-0 z-40 glass border-b border-slate-200/50">
-    <div class="flex items-center justify-between px-4 py-3">
+<!-- ═══════ DESKTOP LAYOUT ═══════ -->
+<div class="flex min-h-screen">
+
+  <!-- Desktop Sidebar -->
+  <aside class="hidden lg:flex flex-col w-64 flex-shrink-0 fixed inset-y-0 left-0 z-40"
+         style="background:linear-gradient(180deg,#312e81 0%,#1e1b4b 100%)" aria-label="Sidebar Navigation">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+      <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+        </svg>
+      </div>
+      <div>
+        <span class="font-bold text-white text-base tracking-tight">SchoolMS</span>
+        <p class="text-white/40 text-xs">Management System</p>
+      </div>
+    </div>
+
+    <!-- User Info -->
+    {% if user %}
+    <div class="px-4 py-3 mx-3 mt-3 rounded-xl" style="background:rgba(255,255,255,0.08)">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-violet-500 flex items-center justify-center flex-shrink-0">
+          <span class="text-white font-bold text-sm">{{ (user.name or user.email)[0]|upper }}</span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-white font-medium text-sm truncate">{{ user.name or user.email }}</p>
+          <p class="text-white/50 text-xs">{{ user.role.value|title if user.role else '' }}</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Nav Links -->
+    <nav class="flex-1 overflow-y-auto no-scrollbar px-3 py-3 space-y-0.5">
+
+      <a href="/dashboard" data-nav-link
+         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group
+                data-[active=true]:bg-white/20 data-[active=true]:text-white
+                text-white/70 hover:text-white hover:bg-white/10">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Dashboard
+      </a>
+
+      {% if user and user.role and user.role.value in ['super_admin', 'school_admin'] %}
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-white/30">Management</p>
+
+      <a href="/schools" data-nav-link
+         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                data-[active=true]:bg-white/20 data-[active=true]:text-white
+                text-white/70 hover:text-white hover:bg-white/10">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
+        </svg>
+        Schools
+      </a>
+
+      <a href="/classes" data-nav-link
+         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                data-[active=true]:bg-white/20 data-[active=true]:text-white
+                text-white/70 hover:text-white hover:bg-white/10">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+        </svg>
+        Classes
+      </a>
+      {% endif %}
+
+      <p class="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-widest text-white/30">Academics</p>
+
+      <a href="/attendance" data-nav-link
+         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                data-[active=true]:bg-white/20 data-[active=true]:text-white
+                text-white/70 hover:text-white hover:bg-white/10">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Attendance
+      </a>
+
+      <a href="/marks" data-nav-link
+         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                data-[active=true]:bg-white/20 data-[active=true]:text-white
+                text-white/70 hover:text-white hover:bg-white/10">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+        </svg>
+        Marks
+      </a>
+
+      <a href="/exams" data-nav-link
+         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                data-[active=true]:bg-white/20 data-[active=true]:text-white
+                text-white/70 hover:text-white hover:bg-white/10">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+        </svg>
+        Exams
+      </a>
+
+      <a href="/notifications" data-nav-link
+         class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+                data-[active=true]:bg-white/20 data-[active=true]:text-white
+                text-white/70 hover:text-white hover:bg-white/10">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+        </svg>
+        Notifications
+      </a>
+    </nav>
+
+    <!-- Bottom actions -->
+    <div class="border-t border-white/10 p-3 space-y-1">
+      <button onclick="ThemeManager.toggle()" data-theme-toggle aria-label="Toggle dark mode"
+              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+                     text-white/70 hover:text-white hover:bg-white/10 transition-all">
+        <span data-theme-icon class="sidebar-icon flex items-center justify-center">
+          <svg fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+          </svg>
+        </span>
+        Dark Mode
+      </button>
+      <a href="/logout" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+                               text-white/70 hover:text-white hover:bg-red-500/20 transition-all">
+        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+        </svg>
+        Sign Out
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 flex flex-col lg:pl-64 min-w-0">
+
+    <!-- Top Bar -->
+    <header class="sticky top-0 z-30 border-b" style="background:var(--color-surface);border-color:var(--color-border)">
+      <div class="flex items-center gap-3 px-4 sm:px-6 h-14">
+
+        <!-- Mobile hamburger -->
+        <button id="drawer-trigger" class="lg:hidden p-2 -ml-1 rounded-lg transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
+                aria-label="Open navigation" aria-expanded="false">
+          <svg class="w-5 h-5" style="color:var(--color-text-secondary)" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
+          </svg>
+        </button>
+
+        <!-- Page title area -->
+        <div class="flex-1 min-w-0">
+          <h1 class="text-sm font-semibold truncate" style="color:var(--color-text)">{% block page_title %}{% endblock %}</h1>
+          {% block breadcrumb %}{% endblock %}
+        </div>
+
+        <!-- Right Actions -->
         <div class="flex items-center gap-2">
-            <span class="text-xl">🏫</span>
-            <h1 class="font-bold text-primary-800">SchoolMS</h1>
-        </div>
-        <div class="flex items-center gap-3">
-            <span class="text-xs px-2 py-1 bg-primary-100 text-primary-700 rounded-full font-medium capitalize">
-                {{ user.role.value if user.role.value is defined else user.role }}
+          <!-- Dark Mode (desktop inline) -->
+          <button onclick="ThemeManager.toggle()" data-theme-toggle aria-label="Toggle dark mode"
+                  class="hidden sm:flex p-2 rounded-lg transition-all hover:bg-slate-100 dark:hover:bg-slate-800">
+            <span data-theme-icon style="color:var(--color-text-secondary);width:18px;height:18px;display:flex;align-items:center;justify-content:center">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-[18px] h-[18px]">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+              </svg>
             </span>
-            <a href="/logout" class="text-slate-500 hover:text-red-500 transition-colors">🚪</a>
+          </button>
+
+          {% if user %}
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-violet-500 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+            <span class="text-white font-bold text-xs">{{ (user.name or user.email)[0]|upper }}</span>
+          </div>
+          {% endif %}
         </div>
-    </div>
-</header>
+      </div>
+    </header>
 
-<!-- Mobile Bottom Nav -->
-<nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 glass border-t border-slate-200/50">
-    <div class="flex items-center justify-around py-2">
-        <a href="/dashboard" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all {% if request.url.path == '/dashboard' %}text-primary-600{% else %}text-slate-400{% endif %}">
-            <span class="text-xl">🏠</span>
-            <span class="text-[10px] font-medium">Home</span>
-        </a>
-        {% set role = user.role.value if user.role.value is defined else user.role %}
-        {% if role in ['teacher', 'school_admin'] %}
-        <a href="/attendance/mark" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all {% if '/attendance' in request.url.path %}text-primary-600{% else %}text-slate-400{% endif %}">
-            <span class="text-xl">📋</span>
-            <span class="text-[10px] font-medium">Attend</span>
-        </a>
-        <a href="/marks/entry" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all {% if '/marks' in request.url.path %}text-primary-600{% else %}text-slate-400{% endif %}">
-            <span class="text-xl">📊</span>
-            <span class="text-[10px] font-medium">Marks</span>
-        </a>
-        {% endif %}
-        <a href="/notifications{% if role in ['teacher', 'school_admin'] %}/send{% endif %}" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all {% if '/notifications' in request.url.path %}text-primary-600{% else %}text-slate-400{% endif %}">
-            <span class="text-xl">🔔</span>
-            <span class="text-[10px] font-medium">Notify</span>
-        </a>
+    <!-- Flash messages -->
+    {% if request.query_params.get('msg') %}
+    <div class="mx-4 sm:mx-6 mt-4 px-4 py-3 rounded-xl border text-sm font-medium
+                bg-emerald-50 border-emerald-200 text-emerald-800
+                dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300 fade-in"
+         data-auto-dismiss="6000" role="alert">
+      ✓ {{ request.query_params.get('msg') }}
     </div>
-</nav>
+    {% endif %}
 
-<!-- Main Content -->
-<main class="lg:ml-64 pt-16 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-        {% block content %}{% endblock %}
-    </div>
-</main>
+    <!-- Page content -->
+    <main class="flex-1 p-4 sm:p-6 fade-in" role="main">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="px-6 py-4 text-xs text-center border-t" style="color:var(--color-text-muted);border-color:var(--color-border)">
+      © 2025 SchoolMS — All rights reserved
+    </footer>
+  </div>
+</div>
 
 {% else %}
-<!-- Unauthenticated layout -->
-<main class="min-h-screen">
-    {% block auth_content %}{% endblock %}
+<!-- ═══════ UNAUTHENTICATED LAYOUT ═══════ -->
+<main class="min-h-screen flex items-center justify-center p-4" role="main">
+  {% block content %}{% endblock %}
 </main>
 {% endif %}
 
-<script src="/static/js/app.js"></script>
-{% block scripts %}{% endblock %}
+<script src="/static/js/app.js" defer></script>
+{% block extra_scripts %}{% endblock %}
 </body>
 </html>

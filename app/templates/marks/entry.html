@@ -1,79 +1,156 @@
 {% extends "base.html" %}
 {% block title %}Marks Entry — SchoolMS{% endblock %}
+{% block page_title %}Enter Marks{% endblock %}
 {% block content %}
-<div class="fade-in">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-slate-800">Enter Marks</h1>
-        <p class="text-slate-500 text-sm mt-1">Select class, subject, and exam to enter marks</p>
+<div class="fade-in space-y-6">
+
+    <!-- Header -->
+    <div>
+        <p class="text-sm" style="color:var(--color-text-muted)">Select a class, subject, and exam to record student performance.</p>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-6">
-        <div class="grid sm:grid-cols-3 gap-4">
+    <!-- Filters Card -->
+    <div class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="grid sm:grid-cols-3 gap-5">
+            <!-- Class Selection -->
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Class</label>
-                <select id="sel-class" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 outline-none transition-all text-sm">
-                    <option value="">Select class</option>
-                    {% for cls in classes %}<option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>{% endfor %}
-                </select>
+                <label for="sel-class" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--color-text-secondary)">Class</label>
+                <div class="relative">
+                    <select id="sel-class" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)">
+                        <option value="">Select class...</option>
+                        {% for cls in classes %}
+                        <option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Subject Selection -->
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Subject</label>
-                <select id="sel-subject" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 outline-none transition-all text-sm">
-                    <option value="">Select subject</option>
-                    {% for sub in subjects %}<option value="{{ sub.id }}" {% if selected_subject == sub.id %}selected{% endif %}>{{ sub.name }}</option>{% endfor %}
-                </select>
+                <label for="sel-subject" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--color-text-secondary)">Subject</label>
+                <div class="relative">
+                    <select id="sel-subject" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)">
+                        <option value="">Select subject...</option>
+                        {% for sub in subjects %}
+                        <option value="{{ sub.id }}" {% if selected_subject == sub.id %}selected{% endif %}>{{ sub.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Exam Selection -->
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1.5">Exam</label>
-                <select id="sel-exam" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 outline-none transition-all text-sm">
-                    <option value="">Select exam</option>
-                    {% for ex in exams %}<option value="{{ ex.id }}" {% if selected_exam == ex.id %}selected{% endif %}>{{ ex.name }}</option>{% endfor %}
-                </select>
+                <label for="sel-exam" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--color-text-secondary)">Exam</label>
+                <div class="relative">
+                    <select id="sel-exam" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)">
+                        <option value="">Select exam...</option>
+                        {% for ex in exams %}
+                        <option value="{{ ex.id }}" {% if selected_exam == ex.id %}selected{% endif %}>{{ ex.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
         </div>
-        <button type="button" onclick="loadStudents()" class="mt-4 px-6 py-2.5 bg-primary-100 text-primary-700 text-sm font-medium rounded-xl hover:bg-primary-200 transition-colors">
-            Load Students
-        </button>
+        
+        <div class="mt-5 pt-5 border-t flex sm:justify-end" style="border-color:var(--color-border-light)">
+            <button type="button" onclick="loadStudents()" class="btn-primary w-full sm:w-auto">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
+                </svg>
+                Load Students
+            </button>
+        </div>
     </div>
 
     {% if students %}
-    <form method="POST" action="/marks/entry">
+    <!-- Marks Entry Form -->
+    <form method="POST" action="/marks/entry" class="space-y-6">
         <input type="hidden" name="class_id" value="{{ selected_class }}">
         <input type="hidden" name="subject_id" value="{{ selected_subject }}">
         <input type="hidden" name="exam_id" value="{{ selected_exam }}">
 
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-4">
-            <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-                <span class="text-sm font-medium text-slate-700">{{ students|length }} Students</span>
+        <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+            <!-- List Header -->
+            <div class="px-6 py-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3" style="border-color:var(--color-border);background:var(--color-bg)">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+                    </svg>
+                    <span class="text-sm font-semibold" style="color:var(--color-text)">{{ students|length }} Students</span>
+                </div>
+                
+                <div class="flex items-center gap-2 text-xs font-medium" style="color:var(--color-text-muted)">
+                    <span>Tab to move quickly</span>
+                    <kbd class="px-1.5 py-0.5 rounded border bg-slate-50 dark:bg-slate-800" style="border-color:var(--color-border)">⇥</kbd>
+                </div>
             </div>
-            <div class="divide-y divide-slate-50">
+
+            <!-- Header Row for Desktop -->
+            <div class="hidden sm:grid sm:grid-cols-12 px-6 py-3 border-b text-xs font-semibold uppercase tracking-wider" style="border-color:var(--color-border-light);background:var(--color-bg);color:var(--color-text-muted)">
+                <div class="col-span-8">Student Name</div>
+                <div class="col-span-4 text-right">Marks / Max Marks</div>
+            </div>
+
+            <!-- Student Rows -->
+            <div class="divide-y" style="border-color:var(--color-border-light)">
                 {% for s in students %}
-                <div class="px-5 py-4 flex items-center gap-4">
-                    <div class="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-700 flex-shrink-0">
-                        {{ s.name[0]|upper }}
+                <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    
+                    <!-- Student Info -->
+                    <div class="flex items-center gap-4 flex-1">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40 flex items-center justify-center flex-shrink-0">
+                            <span class="text-sm font-bold text-primary-700 dark:text-primary-300">{{ s.name[0]|upper }}</span>
+                        </div>
+                        <div>
+                            <span class="text-sm font-semibold block" style="color:var(--color-text)">{{ s.name }}</span>
+                            <span class="text-xs mt-0.5 block" style="color:var(--color-text-muted)">ID: {{ s.id }}</span>
+                        </div>
                     </div>
-                    <span class="text-sm font-medium text-slate-800 flex-1">{{ s.name }}</span>
-                    <div class="flex items-center gap-2">
-                        <input type="number" name="marks_{{ s.id }}" value="{{ s.existing_marks }}"
-                            step="0.5" min="0" placeholder="Marks"
-                            class="w-20 px-3 py-2 rounded-lg border border-slate-200 text-sm text-center focus:border-primary-400 outline-none">
-                        <span class="text-slate-400 text-sm">/</span>
+                    
+                    <!-- Input Fields -->
+                    <div class="flex items-center sm:justify-end gap-2 mt-2 sm:mt-0 ml-14 sm:ml-0">
+                        <div class="relative">
+                            <input type="number" name="marks_{{ s.id }}" value="{{ s.existing_marks }}"
+                                step="0.5" min="0" placeholder="0"
+                                class="input-field text-center w-24 font-mono font-semibold" style="padding-right: 2rem;">
+                        </div>
+                        <span class="text-xl font-light" style="color:var(--color-text-muted)">/</span>
                         <input type="number" name="max_{{ s.id }}" value="{{ s.max_marks }}"
                             step="0.5" min="1"
-                            class="w-20 px-3 py-2 rounded-lg border border-slate-200 text-sm text-center focus:border-primary-400 outline-none">
+                            class="input-field text-center w-20 font-mono text-xs" style="background:var(--color-bg)">
                     </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
 
-        <button type="submit"
-            class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all shadow-lg shadow-primary-500/25 active:scale-[0.98]">
-            Save Marks
-        </button>
+        <!-- Submit Action -->
+        <div class="flex sm:justify-end">
+            <button type="submit" class="btn-primary w-full sm:w-auto shadow-lg shadow-primary-500/25">
+                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Save All Marks
+            </button>
+        </div>
     </form>
     {% endif %}
+
 </div>
 {% endblock %}
 
@@ -83,10 +160,25 @@ function loadStudents() {
     const c = document.getElementById('sel-class').value;
     const s = document.getElementById('sel-subject').value;
     const e = document.getElementById('sel-exam').value;
+    
     if (c && s && e) {
+        // Show loading state on button
+        const btn = document.querySelector('button[onclick="loadStudents()"]');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                         </svg> Loading...`;
+                         
         window.location = `/marks/entry?class_id=${c}&subject_id=${s}&exam_id=${e}`;
     } else {
-        alert('Please select class, subject, and exam');
+        // Use custom toast if available, otherwise alert
+        if (window.showToast) {
+            showToast('Please select a class, subject, and exam to load students.', 'error');
+        } else {
+            alert('Please select class, subject, and exam');
+        }
     }
 }
 </script>

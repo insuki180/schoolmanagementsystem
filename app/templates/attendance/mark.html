@@ -1,85 +1,172 @@
 {% extends "base.html" %}
 {% block title %}Mark Attendance — SchoolMS{% endblock %}
+{% block page_title %}Mark Attendance{% endblock %}
 {% block content %}
-<div class="fade-in">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-slate-800">Mark Attendance</h1>
-        <p class="text-slate-500 text-sm mt-1">Default: all present. Tap to mark absent.</p>
+<div class="fade-in space-y-6">
+
+    <!-- Header & Feedback -->
+    <div>
+        <p class="text-sm" style="color:var(--color-text-muted)">Record daily attendance for your class. Defaults to all present.</p>
     </div>
 
     {% if success %}
-    <div class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm flex items-center gap-2 slide-up">
-        <span>✅</span> {{ success }}
+    <!-- Success Alert matching the Toast style somewhat -->
+    <div class="p-4 rounded-xl border flex items-center gap-3 slide-up"
+         style="background:var(--color-surface);border-color:var(--color-border);border-left:4px solid #10b981">
+        <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+            </svg>
+        </div>
+        <p class="text-sm font-medium" style="color:var(--color-text)">{{ success }}</p>
     </div>
     {% endif %}
 
-    <!-- Class Selection -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 mb-6">
-        <label class="block text-sm font-medium text-slate-700 mb-2">Select Class</label>
-        <select id="class-select" onchange="window.location='/attendance/mark?class_id='+this.value"
-            class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none transition-all text-sm">
-            <option value="">Choose a class...</option>
-            {% for cls in classes %}
-            <option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
-            {% endfor %}
-        </select>
+    <!-- Class Selection Card -->
+    <div class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
+        <label for="class-select" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Select Class</label>
+        <div class="relative max-w-md">
+            <select id="class-select" onchange="window.location='/attendance/mark?class_id='+this.value"
+                class="input-field appearance-none pr-10 w-full font-medium" style="background-color:var(--color-bg)">
+                <option value="">Choose a class...</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+                {% endfor %}
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                </svg>
+            </div>
+        </div>
     </div>
 
     {% if students %}
-    <form method="POST" action="/attendance/mark">
+    <form method="POST" action="/attendance/mark" class="space-y-6">
         <input type="hidden" name="class_id" value="{{ selected_class }}">
         <input type="hidden" name="att_date" value="{{ today }}">
 
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-4">
-            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                <span class="text-sm font-medium text-slate-700">{{ students|length }} Students</span>
-                <span class="text-xs text-slate-400">📅 {{ today }}</span>
+        <!-- Student List Container -->
+        <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+            <!-- List Header -->
+            <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border);background:var(--color-bg)">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                    </svg>
+                    <span class="text-sm font-semibold" style="color:var(--color-text)">{{ students|length }} Students</span>
+                </div>
+                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/>
+                    </svg>
+                    {{ today }}
+                </div>
             </div>
-            <div class="divide-y divide-slate-50">
+
+            <!-- Student Rows -->
+            <div class="divide-y" style="border-color:var(--color-border-light)">
                 {% for s in students %}
-                <label class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-slate-50/50 transition-colors student-row" data-student-id="{{ s.student_id }}">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-700">
-                            {{ s.student_name[0]|upper }}
+                <!-- Wrapping label to make the whole row clickable for better UX on mobile -->
+                <label class="flex items-center justify-between px-6 py-4 cursor-pointer transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50 student-row group" data-student-id="{{ s.student_id }}">
+                    <div class="flex items-center gap-4">
+                        <!-- Avatar -->
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                            <span class="text-sm font-bold text-primary-700 dark:text-primary-300">{{ s.student_name[0]|upper }}</span>
                         </div>
-                        <span class="text-sm font-medium text-slate-800">{{ s.student_name }}</span>
+                        <div>
+                            <span class="text-sm font-semibold block" style="color:var(--color-text)">{{ s.student_name }}</span>
+                            <span class="text-xs mt-0.5 block" style="color:var(--color-text-muted)">ID: {{ s.student_id }}</span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="status-label text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Present</span>
-                        <input type="checkbox" name="absent" value="{{ s.student_id }}"
-                            class="absent-checkbox w-5 h-5 rounded border-slate-300 text-red-600 focus:ring-red-500"
-                            {% if s.is_present == false %}checked{% endif %}>
+
+                    <!-- Status Toggle -->
+                    <div class="flex items-center gap-3">
+                        <span class="status-label badge badge-success w-20 text-center justify-center transition-all duration-300">Present</span>
+                        <!-- Hidden visual toggle (custom checkbox) -->
+                        <div class="relative w-12 h-6 bg-emerald-400 rounded-full cursor-pointer transition-colors duration-300 ease-in-out toggle-bg">
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ease-in-out transform translate-x-6 shadow-sm toggle-dot"></div>
+                            <!-- Actual checkbox (visually hidden but functional for form submission) -->
+                            <input type="checkbox" name="absent" value="{{ s.student_id }}"
+                                class="absent-checkbox absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                {% if s.is_present == false %}checked{% endif %}>
+                        </div>
                     </div>
                 </label>
                 {% endfor %}
             </div>
         </div>
 
-        <button type="submit"
-            class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all shadow-lg shadow-primary-500/25 active:scale-[0.98]">
-            Save Attendance
-        </button>
+        <!-- Submit Button Container -->
+        <div class="flex sm:justify-end">
+            <button type="submit"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all shadow-md shadow-primary-500/25 active:scale-[0.98]">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 019 9v.375M10.125 2.25A3.375 3.375 0 0113.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 013.375 3.375M9 15l2.25 2.25L15 12"/>
+                </svg>
+                Save Attendance
+            </button>
+        </div>
     </form>
+    {% else %}
+        {% if selected_class %}
+        <!-- Empty State for Selected Class without students -->
+        <div class="rounded-2xl border border-dashed p-12 text-center" style="background:var(--color-surface);border-color:var(--color-border)">
+            <div class="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+                </svg>
+            </div>
+            <h3 class="font-semibold text-lg" style="color:var(--color-text)">No Students Found</h3>
+            <p class="text-sm mt-1 max-w-sm mx-auto" style="color:var(--color-text-muted)">There are currently no students enrolled in this class.</p>
+        </div>
+        {% endif %}
     {% endif %}
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.querySelectorAll('.absent-checkbox').forEach(cb => {
-    const row = cb.closest('.student-row');
-    const label = row.querySelector('.status-label');
-    function update() {
-        if (cb.checked) {
-            label.textContent = 'Absent';
-            label.className = 'status-label text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700';
-        } else {
-            label.textContent = 'Present';
-            label.className = 'status-label text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700';
+document.addEventListener('DOMContentLoaded', () => {
+    // Custom Toggle Logic for the attendance rows
+    // Checkbox is: Checked = Absent (Red), Unchecked = Present (Emerald)
+    document.querySelectorAll('.absent-checkbox').forEach(cb => {
+        const row = cb.closest('.student-row');
+        const label = row.querySelector('.status-label');
+        const toggleBg = row.querySelector('.toggle-bg');
+        const toggleDot = row.querySelector('.toggle-dot');
+
+        function updateToggleState() {
+            if (cb.checked) {
+                // Absent State
+                label.textContent = 'Absent';
+                label.className = 'status-label badge badge-error w-20 text-center justify-center transition-all duration-300';
+                
+                // Toggle switch visuals (red, dot left)
+                toggleBg.classList.remove('bg-emerald-400');
+                toggleBg.classList.add('bg-red-400', 'dark:bg-red-500');
+                toggleDot.classList.remove('translate-x-6');
+                toggleDot.classList.add('translate-x-0');
+            } else {
+                // Present State
+                label.textContent = 'Present';
+                label.className = 'status-label badge badge-success w-20 text-center justify-center transition-all duration-300';
+                
+                // Toggle switch visuals (green, dot right)
+                toggleBg.classList.remove('bg-red-400', 'dark:bg-red-500');
+                toggleBg.classList.add('bg-emerald-400');
+                toggleDot.classList.remove('translate-x-0');
+                toggleDot.classList.add('translate-x-6');
+            }
         }
-    }
-    update();
-    cb.addEventListener('change', update);
+
+        // Initialize state
+        updateToggleState();
+
+        // Listen for changes
+        cb.addEventListener('change', updateToggleState);
+    });
 });
 </script>
 {% endblock %}

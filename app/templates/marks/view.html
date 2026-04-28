@@ -1,33 +1,69 @@
 {% extends "base.html" %}
 {% block title %}Marks — {{ student.name }}{% endblock %}
+{% block page_title %}Student Marks{% endblock %}
 {% block content %}
-<div class="fade-in">
-    <div class="mb-6">
-        <a href="/dashboard" class="text-primary-600 text-sm hover:underline">← Back</a>
-        <h1 class="text-2xl font-bold text-slate-800 mt-2">{{ student.name }}</h1>
-        <p class="text-slate-500 text-sm mt-1">Class: {{ class_name }} — All Marks</p>
+<div class="fade-in space-y-6">
+
+    <!-- Header & Back Navigation -->
+    <div>
+        <a href="javascript:history.back()" class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400 transition-colors mb-2">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+            </svg>
+            Back
+        </a>
+        <div class="flex items-center gap-4 mt-2">
+            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-500/20">
+                <span class="text-white font-bold text-xl">{{ student.name[0]|upper }}</span>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold" style="color:var(--color-text)">{{ student.name }}</h1>
+                <p class="text-sm mt-0.5" style="color:var(--color-text-muted)">Class: {{ class_name }} — All Marks</p>
+            </div>
+        </div>
     </div>
 
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <!-- Marks Table Card -->
+    <div class="rounded-2xl border shadow-sm overflow-hidden slide-up" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border);background:var(--color-bg)">
+            <h2 class="font-semibold text-base flex items-center gap-2" style="color:var(--color-text)">
+                <svg class="w-4 h-4" style="color:var(--color-text-muted)" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                </svg>
+                Academic Performance
+            </h2>
+        </div>
+
         {% if marks %}
-        <div class="overflow-x-auto">
+        <div class="table-responsive">
             <table class="w-full">
                 <thead>
-                    <tr class="bg-slate-50/80">
-                        <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Exam</th>
-                        <th class="text-left px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Subject</th>
-                        <th class="text-center px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Marks</th>
-                        <th class="text-center px-6 py-3 text-xs font-semibold text-slate-500 uppercase">Percentage</th>
+                    <tr style="background:var(--color-bg);border-bottom:1px solid var(--color-border-light)">
+                        <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Exam</th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Subject</th>
+                        <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Marks</th>
+                        <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Score</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-50">
+                <tbody class="divide-y" style="border-color:var(--color-border-light)">
                     {% for m in marks %}
-                    <tr class="hover:bg-slate-50/50">
-                        <td class="px-6 py-4 text-sm font-medium text-slate-800">{{ m.exam }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-600">{{ m.subject }}</td>
-                        <td class="px-6 py-4 text-center text-sm font-medium">{{ m.obtained|int }}/{{ m.max|int }}</td>
+                    <tr class="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                        <td class="px-6 py-4">
+                            <span class="text-sm font-semibold block" style="color:var(--color-text)">{{ m.exam }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                {{ m.subject }}
+                            </span>
+                        </td>
                         <td class="px-6 py-4 text-center">
-                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold {% if m.pct >= 60 %}bg-emerald-100 text-emerald-700{% elif m.pct >= 40 %}bg-amber-100 text-amber-700{% else %}bg-red-100 text-red-700{% endif %}">
+                            <div class="inline-flex items-baseline gap-1">
+                                <span class="text-lg font-bold" style="color:var(--color-text)">{{ m.obtained|int }}</span>
+                                <span class="text-xs font-medium" style="color:var(--color-text-muted)">/{{ m.max|int }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="badge px-3 py-1 font-bold {% if m.pct >= 60 %}badge-success{% elif m.pct >= 40 %}badge-warning{% else %}badge-error{% endif %}">
                                 {{ m.pct }}%
                             </span>
                         </td>
@@ -37,11 +73,18 @@
             </table>
         </div>
         {% else %}
-        <div class="p-12 text-center text-slate-400">
-            <p class="text-4xl mb-3">📊</p>
-            <p class="font-medium">No marks recorded yet</p>
+        <!-- Empty State -->
+        <div class="py-16 text-center">
+            <div class="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                </svg>
+            </div>
+            <p class="font-semibold text-base" style="color:var(--color-text)">No marks recorded</p>
+            <p class="text-sm mt-1 max-w-sm mx-auto" style="color:var(--color-text-muted)">No academic results have been published for this student yet.</p>
         </div>
         {% endif %}
     </div>
+
 </div>
 {% endblock %}
