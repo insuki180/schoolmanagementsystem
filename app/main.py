@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 import logging
 from app.database import engine, Base
 from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes
+from app.seed import seed
 
 
 # Configure basic logging
@@ -38,6 +39,9 @@ async def wait_for_db(engine):
 async def lifespan(app: FastAPI):
     # Startup
     await wait_for_db(engine)
+    print("🚀 Running seed...")
+    await seed()
+    print("✅ Seed completed")
     yield
     # Shutdown
     await engine.dispose()
