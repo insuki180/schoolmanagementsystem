@@ -18,16 +18,20 @@ import asyncio
 
 async def wait_for_db(engine):
     logger.info("Waiting for database connection...")
-    for _ in range(5):
+
+    for i in range(15):  # ~45 seconds total
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(lambda conn: None)
-            logger.info("Database connection established.")
+
+            logger.info("✅ Database connection established.")
             return True
+
         except Exception as e:
-            logger.warning(f"Database not ready, retrying in 2s...")
-            await asyncio.sleep(2)
-    raise Exception("Database not ready after retries")
+            logger.warning(f"⏳ DB retry {i+1}/15... {str(e)}")
+            await asyncio.sleep(3)
+
+    logger.error("⚠️ Database still not ready, continuing app startup...")
 
 
 @asynccontextmanager
