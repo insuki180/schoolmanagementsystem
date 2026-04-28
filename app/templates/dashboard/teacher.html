@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Teacher{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-slate-800">Welcome, {{ user.name }}!</h1>
+        <p class="text-slate-500 text-sm mt-1">Quick actions and class overview</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <a href="/attendance/mark" class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl p-5 hover:shadow-lg hover:shadow-emerald-500/20 transition-all active:scale-[0.97] slide-up">
+            <span class="text-2xl">📋</span>
+            <p class="font-semibold text-sm mt-2">Mark Attendance</p>
+        </a>
+        <a href="/notifications/send" class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-5 hover:shadow-lg hover:shadow-blue-500/20 transition-all active:scale-[0.97] slide-up" style="animation-delay:0.05s">
+            <span class="text-2xl">🔔</span>
+            <p class="font-semibold text-sm mt-2">Send Notification</p>
+        </a>
+        <a href="/marks/entry" class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-5 hover:shadow-lg hover:shadow-purple-500/20 transition-all active:scale-[0.97] slide-up" style="animation-delay:0.1s">
+            <span class="text-2xl">📊</span>
+            <p class="font-semibold text-sm mt-2">Enter Marks</p>
+        </a>
+        <a href="/users/create-student" class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-5 hover:shadow-lg hover:shadow-amber-500/20 transition-all active:scale-[0.97] slide-up" style="animation-delay:0.15s">
+            <span class="text-2xl">👤</span>
+            <p class="font-semibold text-sm mt-2">Add Student</p>
+        </a>
+    </div>
+
+    <!-- My Classes -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <h2 class="font-semibold text-slate-800">My Classes</h2>
+        </div>
+        <div class="divide-y divide-slate-50">
+            {% for item in classes %}
+            <div class="px-6 py-4 flex items-center justify-between">
+                <div>
+                    <p class="font-medium text-slate-800">{{ item.class.name }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ item.student_count }} students</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    {% if item.marked_today %}
+                    <span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">✓ Done</span>
+                    {% else %}
+                    <a href="/attendance/mark?class_id={{ item.class.id }}" class="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-xs font-medium hover:bg-primary-200 transition-colors">Mark Today</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-slate-400 text-sm">No classes assigned yet</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Notifications -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-800">Recent Notifications</h2>
+            <a href="/notifications" class="text-primary-600 text-sm hover:underline">View All</a>
+        </div>
+        <div class="divide-y divide-slate-50">
+            {% for notif in recent_notifications %}
+            <div class="px-6 py-4">
+                <p class="font-medium text-sm text-slate-800">{{ notif.title }}</p>
+                <p class="text-xs text-slate-500 mt-1 line-clamp-1">{{ notif.message }}</p>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-slate-400 text-sm">No notifications</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

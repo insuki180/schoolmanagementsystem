@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "projectName": "school management system",
+  "userName": "developer",
+  "skillLevel": "intermediate",
+  "outputFolder": ".vibecheck/flow",
+  "planningArtifacts": ".vibecheck\\flow\\planning-artifacts",
+  "implementationArtifacts": ".vibecheck\\flow\\implementation-artifacts",
+  "installedAt": "2026-04-27T18:37:37.826Z",
+  "ide": [
+    "vscode"
+  ]
+}

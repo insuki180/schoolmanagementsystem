@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}School Management System{% endblock %}</title>
+    <meta name="description" content="Modern school management system for attendance, marks, and notifications">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',800:'#3730a3',900:'#312e81' },
+                        surface: '#f8fafc',
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .glass { background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        .slide-up { animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        /* Hide scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+{% if user is defined and user %}
+<!-- Desktop Sidebar -->
+<div class="hidden lg:flex">
+    <aside class="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-primary-800 to-primary-900 text-white z-40 flex flex-col shadow-2xl">
+        <!-- Logo -->
+        <div class="p-6 border-b border-primary-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-lg font-bold">🏫</div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">SchoolMS</h1>
+                    <p class="text-xs text-primary-300 capitalize">{{ user.role.value if user.role.value is defined else user.role }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nav Links -->
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto no-scrollbar">
+            <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if request.url.path == '/dashboard' %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
+                <span class="text-lg">🏠</span> Dashboard
+            </a>
+
+            {% set role = user.role.value if user.role.value is defined else user.role %}
+            {% if role in ['teacher', 'school_admin'] %}
+            <a href="/attendance/mark" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/attendance' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
+                <span class="text-lg">📋</span> Attendance
+            </a>
+            {% endif %}
+
+            {% if role == 'parent' %}
+            <a href="/notifications" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/notifications' == request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
+                <span class="text-lg">🔔</span> Notifications
+            </a>
+            {% endif %}
+
+            {% if role in ['teacher', 'school_admin'] %}
+            <a href="/marks/entry" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/marks' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
+                <span class="text-lg">📊</span> Marks
+            </a>
+            <a href="/notifications/send" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/notifications' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
+                <span class="text-lg">🔔</span> Notifications
+            </a>
+            {% endif %}
+
+            {% if role in ['school_admin'] %}
+            <a href="/classes" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/classes' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
+                <span class="text-lg">🏫</span> Classes
+            </a>
+            <a href="/exams" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/exams' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
+                <span class="text-lg">📝</span> Exams
+            </a>
+            {% endif %}
+
+            {% if role == 'super_admin' %}
+            <a href="/schools" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium hover:bg-white/10 transition-all duration-200 {% if '/schools' in request.url.path %}bg-white/15 text-white{% else %}text-primary-200{% endif %}">
+                <span class="text-lg">🏢</span> Schools
+            </a>
+            {% endif %}
+        </nav>
+
+        <!-- User Info -->
+        <div class="p-4 border-t border-primary-700/50">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-sm font-bold">
+                    {{ user.name[0]|upper }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium truncate">{{ user.name }}</p>
+                    <p class="text-xs text-primary-300 truncate">{{ user.email }}</p>
+                </div>
+            </div>
+            <a href="/logout" class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-primary-300 hover:bg-white/10 hover:text-white transition-all">
+                <span>🚪</span> Sign Out
+            </a>
+        </div>
+    </aside>
+</div>
+
+<!-- Mobile Top Bar -->
+<header class="lg:hidden fixed top-0 left-0 right-0 z-40 glass border-b border-slate-200/50">
+    <div class="flex items-center justify-between px-4 py-3">
+        <div class="flex items-center gap-2">
+            <span class="text-xl">🏫</span>
+            <h1 class="font-bold text-primary-800">SchoolMS</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs px-2 py-1 bg-primary-100 text-primary-700 rounded-full font-medium capitalize">
+                {{ user.role.value if user.role.value is defined else user.role }}
+            </span>
+            <a href="/logout" class="text-slate-500 hover:text-red-500 transition-colors">🚪</a>
+        </div>
+    </div>
+</header>
+
+<!-- Mobile Bottom Nav -->
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 glass border-t border-slate-200/50">
+    <div class="flex items-center justify-around py-2">
+        <a href="/dashboard" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all {% if request.url.path == '/dashboard' %}text-primary-600{% else %}text-slate-400{% endif %}">
+            <span class="text-xl">🏠</span>
+            <span class="text-[10px] font-medium">Home</span>
+        </a>
+        {% set role = user.role.value if user.role.value is defined else user.role %}
+        {% if role in ['teacher', 'school_admin'] %}
+        <a href="/attendance/mark" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all {% if '/attendance' in request.url.path %}text-primary-600{% else %}text-slate-400{% endif %}">
+            <span class="text-xl">📋</span>
+            <span class="text-[10px] font-medium">Attend</span>
+        </a>
+        <a href="/marks/entry" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all {% if '/marks' in request.url.path %}text-primary-600{% else %}text-slate-400{% endif %}">
+            <span class="text-xl">📊</span>
+            <span class="text-[10px] font-medium">Marks</span>
+        </a>
+        {% endif %}
+        <a href="/notifications{% if role in ['teacher', 'school_admin'] %}/send{% endif %}" class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all {% if '/notifications' in request.url.path %}text-primary-600{% else %}text-slate-400{% endif %}">
+            <span class="text-xl">🔔</span>
+            <span class="text-[10px] font-medium">Notify</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="lg:ml-64 pt-16 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        {% block content %}{% endblock %}
+    </div>
+</main>
+
+{% else %}
+<!-- Unauthenticated layout -->
+<main class="min-h-screen">
+    {% block auth_content %}{% endblock %}
+</main>
+{% endif %}
+
+<script src="/static/js/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,100 @@
+/* Custom styles for School Management System */
+
+/* Smooth transitions globally */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Card hover effects */
+.card-hover {
+    transition: all 0.2s ease;
+}
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.08);
+}
+
+/* Pulse animation for alerts */
+@keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+.pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Loading spinner */
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Mobile touch-friendly targets */
+@media (max-width: 640px) {
+    .touch-target {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* Table responsive styles */
+@media (max-width: 640px) {
+    .table-responsive {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Gradient text */
+.gradient-text {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Status badges animation */
+.badge-present {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #065f46;
+}
+.badge-absent {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #991b1b;
+}
+
+/* Form focus animation */
+input:focus, select:focus, textarea:focus {
+    transition: all 0.2s ease;
+}
+
+/* Print styles */
+@media print {
+    nav, aside, .no-print { display: none !important; }
+    main { margin: 0 !important; padding: 0 !important; }
+}

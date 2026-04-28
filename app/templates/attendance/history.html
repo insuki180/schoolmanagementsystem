@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Attendance History — {{ student.name }}{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <div class="mb-6">
+        <a href="/dashboard" class="text-primary-600 text-sm hover:underline">← Back</a>
+        <h1 class="text-2xl font-bold text-slate-800 mt-2">{{ student.name }}</h1>
+        <p class="text-slate-500 text-sm mt-1">Attendance History — Last 60 days</p>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+            <p class="text-2xl font-bold text-slate-800">{{ total }}</p>
+            <p class="text-xs text-slate-500 mt-1">Total Days</p>
+        </div>
+        <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
+            <p class="text-2xl font-bold text-emerald-700">{{ present }}</p>
+            <p class="text-xs text-emerald-600 mt-1">Present</p>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+            <p class="text-2xl font-bold {% if pct >= 75 %}text-emerald-600{% elif pct >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">{{ pct }}%</p>
+            <p class="text-xs text-slate-500 mt-1">Rate</p>
+        </div>
+    </div>
+
+    <!-- Records -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div class="divide-y divide-slate-50">
+            {% for record in records %}
+            <div class="px-5 py-3 flex items-center justify-between">
+                <span class="text-sm text-slate-700">{{ record.date.strftime('%a, %b %d %Y') }}</span>
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold {% if record.is_present %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}">
+                    {% if record.is_present %}Present{% else %}Absent{% endif %}
+                </span>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-slate-400 text-sm">No records found</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

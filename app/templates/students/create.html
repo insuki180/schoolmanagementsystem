@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Add Student — SchoolMS{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto fade-in">
+    <div class="mb-6">
+        <a href="/dashboard" class="text-primary-600 text-sm hover:underline">← Back</a>
+        <h1 class="text-2xl font-bold text-slate-800 mt-2">Add Student</h1>
+        <p class="text-slate-500 text-sm mt-1">Parent account will be created automatically</p>
+    </div>
+    {% if error %}<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">⚠️ {{ error }}</div>{% endif %}
+    {% if success %}<div class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm">✅ {{ success }}</div>{% endif %}
+    <form method="POST" action="/users/create-student" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+        <div class="pb-4 border-b border-slate-100">
+            <h3 class="font-semibold text-sm text-slate-700 mb-4">Student Details</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Student Name</label>
+                    <input type="text" name="student_name" required class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 outline-none transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Class</label>
+                    <select name="class_id" required class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 outline-none transition-all text-sm">
+                        <option value="">Select class</option>
+                        {% for cls in classes %}<option value="{{ cls.id }}">{{ cls.name }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div>
+            <h3 class="font-semibold text-sm text-slate-700 mb-4">Parent Details</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Parent Name</label>
+                    <input type="text" name="parent_name" required class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 outline-none transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Parent Email</label>
+                    <input type="email" name="parent_email" required class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 outline-none transition-all text-sm"
+                        placeholder="parent@email.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Parent Phone</label>
+                    <input type="text" name="parent_phone" class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-primary-400 outline-none transition-all text-sm">
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="w-full py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all shadow-lg shadow-primary-500/25 active:scale-[0.98]">Add Student</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Parent{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-slate-800">Hello, {{ user.name }}!</h1>
+        <p class="text-slate-500 text-sm mt-1">Stay updated on your child's progress</p>
+    </div>
+
+    <!-- Notifications -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="font-semibold text-slate-800 flex items-center gap-2">🔔 Notifications</h2>
+            <a href="/notifications" class="text-primary-600 text-sm hover:underline">View All</a>
+        </div>
+        <div class="divide-y divide-slate-50 max-h-64 overflow-y-auto">
+            {% for notif in notifications[:5] %}
+            <div class="px-6 py-4 slide-up" style="animation-delay:{{ loop.index0 * 0.05 }}s">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="font-medium text-sm text-slate-800">{{ notif.title }}</p>
+                        <p class="text-xs text-slate-500 mt-1">{{ notif.message[:120] }}{% if notif.message|length > 120 %}...{% endif %}</p>
+                    </div>
+                    <span class="text-xs text-slate-400 whitespace-nowrap">{{ notif.created_at.strftime('%b %d') if notif.created_at else '' }}</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-slate-400 text-sm">No notifications yet</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Children -->
+    {% for child in children %}
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6 slide-up" style="animation-delay:{{ loop.index0 * 0.1 }}s">
+        <div class="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-primary-50 to-transparent">
+            <h2 class="font-semibold text-slate-800">{{ child.student.name }}</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Class: {{ child.class_name }}</p>
+        </div>
+
+        <!-- Attendance Summary -->
+        <div class="px-6 py-4 border-b border-slate-50">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-medium text-slate-700">📋 Recent Attendance</h3>
+                <a href="/attendance/history/{{ child.student.id }}" class="text-primary-600 text-xs hover:underline">Full History →</a>
+            </div>
+            <div class="flex gap-1.5 flex-wrap">
+                {% for att in child.attendance[:14] %}
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold {% if att.is_present %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}" title="{{ att.date }}">
+                    {% if att.is_present %}✓{% else %}✗{% endif %}
+                </div>
+                {% else %}
+                <p class="text-xs text-slate-400">No attendance records yet</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Marks Summary -->
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-medium text-slate-700">📊 Marks</h3>
+                <a href="/marks/view/{{ child.student.id }}" class="text-primary-600 text-xs hover:underline">All Marks →</a>
+            </div>
+            {% if child.marks %}
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {% for mark in child.marks[:6] %}
+                <div class="bg-slate-50 rounded-xl p-3 text-center">
+                    <p class="text-lg font-bold {% if mark.marks_obtained / mark.max_marks >= 0.6 %}text-emerald-600{% elif mark.marks_obtained / mark.max_marks >= 0.4 %}text-amber-600{% else %}text-red-600{% endif %}">
+                        {{ mark.marks_obtained|int }}/{{ mark.max_marks|int }}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-xs text-slate-400">No marks available yet</p>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center text-slate-400">
+        <p class="text-4xl mb-3">👶</p>
+        <p class="font-medium">No children linked to your account</p>
+        <p class="text-sm mt-1">Contact your school administrator</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

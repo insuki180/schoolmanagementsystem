@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Classes — SchoolMS{% endblock %}
+{% block content %}
+<div class="fade-in">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Classes</h1>
+            <p class="text-slate-500 text-sm mt-1">Manage school classes and subjects</p>
+        </div>
+    </div>
+
+    {% if error %}<div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{{ error }}</div>{% endif %}
+
+    {% if can_create %}
+    <div class="grid sm:grid-cols-2 gap-4 mb-6">
+        <!-- Add Class -->
+        <form method="POST" action="/classes" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <h3 class="font-semibold text-sm text-slate-700 mb-3">Add New Class</h3>
+            <div class="flex gap-2">
+                <input type="text" name="name" required placeholder="e.g. Class 10-A"
+                    class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:border-primary-400">
+                <button type="submit" class="px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-all">Add</button>
+            </div>
+        </form>
+        <!-- Add Subject -->
+        <form method="POST" action="/classes/subjects" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <h3 class="font-semibold text-sm text-slate-700 mb-3">Add New Subject</h3>
+            <div class="flex gap-2">
+                <input type="text" name="name" required placeholder="e.g. Mathematics"
+                    class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:border-primary-400">
+                <button type="submit" class="px-5 py-2.5 bg-purple-600 text-white text-sm font-medium rounded-xl hover:bg-purple-700 transition-all">Add</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for cls in classes %}
+        <a href="/classes/{{ cls.id }}" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md hover:border-primary-200 transition-all group">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-lg group-hover:bg-primary-200 transition-colors">📚</div>
+                <h3 class="font-semibold text-slate-800">{{ cls.name }}</h3>
+            </div>
+            <p class="text-xs text-primary-600 font-medium group-hover:underline">View Details →</p>
+        </a>
+        {% else %}
+        <div class="col-span-full bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center text-slate-400">
+            <p class="text-4xl mb-3">📚</p>
+            <p class="font-medium">No classes yet</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
