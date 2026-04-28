@@ -12,24 +12,23 @@ async def send_notification(
     sent_by: int, class_ids: list[int] = None, is_school_wide: bool = False
 ) -> Notification:
     """Create and send a notification to specific classes or school-wide."""
+    target_classes = []
+    if class_ids and not is_school_wide:
+        result = await db.execute(
+            select(Class).where(Class.id.in_(class_ids), Class.school_id == school_id)
+        )
+        target_classes = list(result.scalars().all())
+
     notification = Notification(
         title=title,
         message=message,
         school_id=school_id,
         sent_by=sent_by,
         is_school_wide=is_school_wide,
+        target_classes=target_classes,
     )
     db.add(notification)
     await db.flush()
-
-    # Link to target classes
-    if class_ids and not is_school_wide:
-        result = await db.execute(
-            select(Class).where(Class.id.in_(class_ids), Class.school_id == school_id)
-        )
-        classes = result.scalars().all()
-        notification.target_classes = list(classes)
-        await db.flush()
 
     return notification
 
