@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Student Details — {{ student.name }}{% endblock %}
+{% block page_title %}Student Details{% endblock %}
+{% block content %}
+<div class="fade-in space-y-6">
+    <div>
+        <a href="javascript:history.back()" class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 mb-2">
+            Back
+        </a>
+        <h1 class="text-2xl font-bold" style="color:var(--color-text)">{{ student.name }}</h1>
+        <p class="text-sm mt-1" style="color:var(--color-text-muted)">Class {{ class_name }}</p>
+    </div>
+
+    {% if success %}
+    <div class="rounded-xl border px-4 py-3 text-sm font-medium bg-emerald-50 text-emerald-700 border-emerald-200">
+        {{ success }}
+    </div>
+    {% endif %}
+
+    <div class="grid lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
+            <section class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
+                <h2 class="text-lg font-semibold mb-4" style="color:var(--color-text)">Student Info</h2>
+                <div class="grid sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p style="color:var(--color-text-muted)">Student Name</p>
+                        <p class="font-semibold mt-1" style="color:var(--color-text)">{{ student.name }}</p>
+                    </div>
+                    <div>
+                        <p style="color:var(--color-text-muted)">Class Name</p>
+                        <p class="font-semibold mt-1" style="color:var(--color-text)">{{ class_name }}</p>
+                    </div>
+                    <div>
+                        <p style="color:var(--color-text-muted)">Blood Group</p>
+                        <p class="font-semibold mt-1" style="color:var(--color-text)">{{ student.blood_group or "Not provided" }}</p>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <p style="color:var(--color-text-muted)">Address</p>
+                        <p class="font-semibold mt-1 whitespace-pre-line" style="color:var(--color-text)">{{ student.address or "Not provided" }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
+                <h2 class="text-lg font-semibold mb-4" style="color:var(--color-text)">Parent Info</h2>
+                <div class="grid sm:grid-cols-3 gap-4 text-sm items-end">
+                    <div>
+                        <p style="color:var(--color-text-muted)">Parent Name</p>
+                        <p class="font-semibold mt-1" style="color:var(--color-text)">{{ parent.name if parent else "Not assigned" }}</p>
+                    </div>
+                    <div>
+                        <p style="color:var(--color-text-muted)">Phone Number</p>
+                        <p class="font-semibold mt-1" style="color:var(--color-text)">{{ parent.phone_number if parent and parent.phone_number else "Not provided" }}</p>
+                    </div>
+                    <div>
+                        <p style="color:var(--color-text-muted)">WhatsApp</p>
+                        {% if parent and parent.phone_number %}
+                        <a href="{{ parent_whatsapp }}" target="_blank" class="inline-flex mt-1 text-2xl" aria-label="Open WhatsApp chat">📱</a>
+                        {% else %}
+                        <p class="font-semibold mt-1" style="color:var(--color-text)">Unavailable</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <h2 class="text-lg font-semibold" style="color:var(--color-text)">Attendance Section</h2>
+                    <a href="/attendance/{{ student.id }}/history" class="btn-secondary">View Past Leaves</a>
+                </div>
+                <p class="text-sm" style="color:var(--color-text-muted)">Review absent days, parent leave reasons, and duration history for this student.</p>
+            </section>
+        </div>
+
+        <div class="space-y-6">
+            <section class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
+                <h2 class="text-lg font-semibold mb-4" style="color:var(--color-text)">Actions</h2>
+                <form method="POST" action="/notifications/personal" class="space-y-4">
+                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                    <div>
+                        <label class="block text-sm font-medium mb-1" style="color:var(--color-text)">Title</label>
+                        <input type="text" name="title" class="input-field" placeholder="Personal notification title" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1" style="color:var(--color-text)">Message</label>
+                        <textarea name="message" rows="5" class="input-field" placeholder="Write a message for the parent..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary w-full">Send Notification</button>
+                </form>
+            </section>
+
+            <section class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
+                <h2 class="text-lg font-semibold mb-4" style="color:var(--color-text)">Contact Teachers</h2>
+                <div class="space-y-3 text-sm">
+                    {% if teacher_contacts.class_teacher %}
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="font-semibold" style="color:var(--color-text)">{{ teacher_contacts.class_teacher.subject }} - {{ teacher_contacts.class_teacher.name }}</p>
+                            <p style="color:var(--color-text-muted)">{{ teacher_contacts.class_teacher.phone_number or "No phone number" }}</p>
+                        </div>
+                        {% if teacher_contacts.class_teacher.phone_number %}
+                        <a href="{{ teacher_contacts.class_teacher.whatsapp_link }}" target="_blank" class="text-2xl" aria-label="Chat with class teacher">📱</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% for teacher in teacher_contacts.subject_teachers %}
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="font-semibold" style="color:var(--color-text)">{{ teacher.subject }} - {{ teacher.name }}</p>
+                            <p style="color:var(--color-text-muted)">{{ teacher.phone_number or "No phone number" }}</p>
+                        </div>
+                        {% if teacher.phone_number %}
+                        <a href="{{ teacher.whatsapp_link }}" target="_blank" class="text-2xl" aria-label="Chat with {{ teacher.name }}">📱</a>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    {% if not teacher_contacts.class_teacher %}
+                    <p style="color:var(--color-text-muted)">No teacher contacts available for this class yet.</p>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}

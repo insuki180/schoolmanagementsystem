@@ -12,7 +12,10 @@ from app.models.user import User, UserRole
 from app.models.student import Student
 from app.models.class_ import Class
 from app.services.notification_service import (
-    send_notification, get_notifications_for_school, get_notifications_for_parent
+    get_notifications_for_parent,
+    get_notifications_for_school,
+    send_notification,
+    send_personal_notification,
 )
 from app.services.absence_response_service import (
     get_parent_absence_alerts,
@@ -65,6 +68,35 @@ async def send(request: Request, db: DBSession,
         "classes": result.scalars().all(), "templates": NOTIFICATION_TEMPLATES,
         "success": "Notification sent successfully!", "error": None,
     })
+
+
+@router.post("/personal")
+async def send_personal(
+    db: DBSession,
+    student_id: int = Form(...),
+    title: str = Form(...),
+    message: str = Form(...),
+    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
+):
+    if not await can_view_student(current_user, db, student_id):
+        raise HTTPException(status_code=403, detail="You do not have access to this student.")
+
+    try:
+        await send_personal_notification(
+            db,
+            title=title,
+            message=message,
+            school_id=current_user.school_id,
+            sent_by=current_user.id,
+            student_id=student_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return RedirectResponse(
+        url=f"/students/{student_id}/details?success=Notification+sent+successfully",
+        status_code=303,
+    )
 
 
 @router.get("", response_class=HTMLResponse)

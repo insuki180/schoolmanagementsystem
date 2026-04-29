@@ -12,6 +12,7 @@ from app.services.attendance_service import (
     bulk_mark_attendance, get_attendance_history, get_today_attendance
 )
 from app.services.permissions import can_mark_attendance, can_view_student, get_allowed_classes
+from app.services.student_view_service import get_student_absence_history
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
 templates = Jinja2Templates(directory="app/templates")
@@ -91,4 +92,38 @@ async def attendance_history(request: Request, student_id: int, db: DBSession,
         "request": request, "user": current_user,
         "student": student, "records": records,
         "total": total, "present": present, "pct": pct,
+        "absence_rows": [],
+    })
+
+
+@router.get("/{student_id}/history", response_class=HTMLResponse)
+async def attendance_history_with_leaves(
+    request: Request,
+    student_id: int,
+    db: DBSession,
+    current_user: User = Depends(get_current_user),
+):
+    if not await can_view_student(current_user, db, student_id):
+        raise HTTPException(status_code=403, detail="You do not have permission to view this attendance history.")
+
+    student_result = await db.execute(select(Student).where(Student.id == student_id))
+    student = student_result.scalar_one_or_none()
+    if not student:
+        return RedirectResponse(url="/dashboard", status_code=303)
+
+    records = await get_attendance_history(db, student_id, days=60)
+    total = len(records)
+    present = sum(1 for r in records if r.is_present)
+    pct = round(present / total * 100, 1) if total > 0 else 0
+    absence_history = await get_student_absence_history(db, student_id=student_id)
+
+    return templates.TemplateResponse("attendance/history.html", {
+        "request": request,
+        "user": current_user,
+        "student": student,
+        "records": records,
+        "total": total,
+        "present": present,
+        "pct": pct,
+        "absence_rows": absence_history["rows"] if absence_history else [],
     })

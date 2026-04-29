@@ -49,12 +49,13 @@ async def get_notifications_for_school(
 async def get_notifications_for_parent(
     db: AsyncSession, parent_id: int, school_id: int
 ) -> list[Notification]:
-    """Get notifications relevant to a parent (school-wide + their child's classes)."""
-    # Get classes of parent's children
+    """Get notifications relevant to a parent (school-wide + class + personal)."""
     result = await db.execute(
-        select(Student.class_id).where(Student.parent_id == parent_id)
+        select(Student.id, Student.class_id).where(Student.parent_id == parent_id)
     )
-    child_class_ids = [row[0] for row in result.all()]
+    child_rows = result.all()
+    child_ids = [row[0] for row in child_rows]
+    child_class_ids = [row[1] for row in child_rows]
 
     # Get school-wide notifications
     school_wide = await db.execute(
@@ -83,6 +84,18 @@ async def get_notifications_for_parent(
         )
         notifications.extend(class_notifs.scalars().all())
 
+    if child_ids:
+        personal = await db.execute(
+            select(Notification)
+            .where(
+                Notification.school_id == school_id,
+                Notification.target_student_id.in_(child_ids),
+            )
+            .order_by(Notification.created_at.desc())
+            .limit(50)
+        )
+        notifications.extend(personal.scalars().all())
+
     # Deduplicate and sort
     seen = set()
     unique = []
@@ -93,3 +106,33 @@ async def get_notifications_for_parent(
 
     unique.sort(key=lambda x: x.created_at or "", reverse=True)
     return unique[:50]
+
+
+async def send_personal_notification(
+    db: AsyncSession,
+    *,
+    title: str,
+    message: str,
+    school_id: int | None,
+    sent_by: int,
+    student_id: int,
+) -> Notification:
+    """Create a notification for one student only."""
+    result = await db.execute(
+        select(Student).where(Student.id == student_id)
+    )
+    student = result.scalar_one_or_none()
+    if not student or (school_id is not None and student.school_id != school_id):
+        raise ValueError("Student not found for this school.")
+
+    notification = Notification(
+        title=title,
+        message=message,
+        school_id=school_id,
+        sent_by=sent_by,
+        target_student_id=student_id,
+        is_school_wide=False,
+    )
+    db.add(notification)
+    await db.flush()
+    return notification

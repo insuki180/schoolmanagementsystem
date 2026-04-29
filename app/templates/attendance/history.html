@@ -115,5 +115,38 @@
             {% endfor %}
         </div>
     </div>
+
+    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border);background:var(--color-bg)">
+            <h2 class="font-semibold text-base" style="color:var(--color-text)">View Past Leaves</h2>
+            <span class="text-xs font-medium" style="color:var(--color-text-muted)">Absent records with parent response</span>
+        </div>
+        <div class="table-responsive">
+            <table class="w-full">
+                <thead>
+                    <tr style="background:var(--color-bg);border-bottom:1px solid var(--color-border-light)">
+                        <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Date</th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Status</th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Parent Reply</th>
+                        <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Leave Duration</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y" style="border-color:var(--color-border-light)">
+                    {% for row in absence_rows %}
+                    <tr>
+                        <td class="px-6 py-4 text-sm" style="color:var(--color-text)">{{ row.date.strftime('%b %d, %Y') }}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-red-600">Absent</td>
+                        <td class="px-6 py-4 text-sm whitespace-pre-line" style="color:var(--color-text-secondary)">{{ row.parent_reply or "No parent reply yet" }}</td>
+                        <td class="px-6 py-4 text-sm" style="color:var(--color-text)">{{ row.leave_duration if row.leave_duration is not none else "-" }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-sm" style="color:var(--color-text-muted)">No past leave records found for this student.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}

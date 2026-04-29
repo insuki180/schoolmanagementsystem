@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import logging
 from sqlalchemy import text
 from app.database import engine, Base
-from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports
+from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports, students
 
 
 # Configure basic logging
@@ -107,6 +107,19 @@ async def ensure_parent_contact_schema(engine):
         logger.warning("Could not verify parent contact schema: %s", exc)
 
 
+async def ensure_notification_student_target_schema(engine):
+    """Keep personal student notifications compatible on existing deployments."""
+    statements = [
+        "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS target_student_id INTEGER REFERENCES students(id)",
+    ]
+    try:
+        async with engine.begin() as conn:
+            for statement in statements:
+                await conn.execute(text(statement))
+    except Exception as exc:
+        logger.warning("Could not verify personal notification schema: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -114,6 +127,7 @@ async def lifespan(app: FastAPI):
     await ensure_school_logo_column(engine)
     await ensure_academic_control_schema(engine)
     await ensure_parent_contact_schema(engine)
+    await ensure_notification_student_target_schema(engine)
     yield
     # Shutdown
     await engine.dispose()
@@ -145,6 +159,7 @@ app.include_router(exams.router)
 app.include_router(marks.router)
 app.include_router(classes.router)
 app.include_router(student_imports.router)
+app.include_router(students.router)
 
 
 @app.exception_handler(Exception)

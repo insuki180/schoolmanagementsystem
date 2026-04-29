@@ -23,12 +23,14 @@ class Notification(Base):
     message = Column(Text, nullable=False)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=False)
     sent_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    target_student_id = Column(Integer, ForeignKey("students.id"), nullable=True)
     is_school_wide = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
     school = relationship("School", back_populates="notifications")
     sent_by_user = relationship("User", back_populates="sent_notifications")
+    target_student = relationship("Student", lazy="selectin")
     target_classes = relationship(
         "Class",
         secondary=notification_classes,
