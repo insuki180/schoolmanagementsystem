@@ -41,6 +41,15 @@
                 <!-- Input Fields -->
                 <div class="space-y-5">
                     <div>
+                        <label for="notif-template" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Notification Template</label>
+                        <select id="notif-template" class="input-field w-full" onchange="useSelectedTemplate(this)">
+                            <option value="">Choose a predefined template</option>
+                            {% for tpl in templates %}
+                            <option value="{{ loop.index0 }}" data-title="{{ tpl.title }}" data-message="{{ tpl.message }}">{{ tpl.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
                         <label for="notif-title" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Alert Title</label>
                         <input type="text" name="title" id="notif-title" required
                             class="input-field w-full"
@@ -144,6 +153,14 @@
 
 {% block scripts %}
 <script>
+function useSelectedTemplate(select) {
+    const option = select.options[select.selectedIndex];
+    if (!option || !option.dataset.title) {
+        return;
+    }
+    useTemplate(option.dataset.title, option.dataset.message || "");
+}
+
 function useTemplate(title, message) {
     // Populate fields
     const titleInput = document.getElementById('notif-title');

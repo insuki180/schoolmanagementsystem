@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from contextlib import asynccontextmanager
 import logging
+from sqlalchemy import text
 from app.database import engine, Base
 from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes
 
@@ -34,10 +35,25 @@ async def wait_for_db(engine):
     logger.error("⚠️ Database still not ready, continuing app startup...")
 
 
+async def ensure_school_logo_column(engine):
+    """Keep the schools table compatible with the logo feature."""
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "ALTER TABLE schools "
+                    "ADD COLUMN IF NOT EXISTS logo_url VARCHAR(500)"
+                )
+            )
+    except Exception as exc:
+        logger.warning("Could not verify schools.logo_url column: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     await wait_for_db(engine)
+    await ensure_school_logo_column(engine)
     yield
     # Shutdown
     await engine.dispose()

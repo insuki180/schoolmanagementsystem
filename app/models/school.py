@@ -11,6 +11,7 @@ class School(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
+    logo_url = Column(String(500), nullable=True)
     address = Column(Text, nullable=True)
     phone = Column(String(20), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

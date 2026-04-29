@@ -14,7 +14,7 @@ from app.services.notification_service import (
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 templates = Jinja2Templates(directory="app/templates")
 
-TEMPLATES_LIST = [
+NOTIFICATION_TEMPLATES = [
     {"title": "Holiday Notice", "message": "Dear Parents, please note that the school will remain closed on the mentioned date. Thank you."},
     {"title": "Exam Schedule", "message": "Dear Parents, exams are scheduled to begin soon. Please ensure your child prepares well."},
     {"title": "Fee Reminder", "message": "This is a reminder to clear any pending fee dues at the earliest. Thank you."},
@@ -30,7 +30,7 @@ async def send_page(request: Request, db: DBSession,
         select(Class).where(Class.school_id == current_user.school_id).order_by(Class.name))
     return templates.TemplateResponse("notifications/send.html", {
         "request": request, "user": current_user,
-        "classes": result.scalars().all(), "templates": TEMPLATES_LIST,
+        "classes": result.scalars().all(), "templates": NOTIFICATION_TEMPLATES,
         "success": None, "error": None,
     })
 
@@ -52,7 +52,7 @@ async def send(request: Request, db: DBSession,
         select(Class).where(Class.school_id == current_user.school_id).order_by(Class.name))
     return templates.TemplateResponse("notifications/send.html", {
         "request": request, "user": current_user,
-        "classes": result.scalars().all(), "templates": TEMPLATES_LIST,
+        "classes": result.scalars().all(), "templates": NOTIFICATION_TEMPLATES,
         "success": "Notification sent successfully!", "error": None,
     })
 

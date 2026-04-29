@@ -7,6 +7,7 @@ from app.database import get_db, AsyncSessionLocal
 from app.services.auth_service import decode_access_token
 from app.models.user import User, UserRole
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 
 async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> User:
@@ -33,7 +34,11 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         )
 
     # Fetch full user from DB
-    result = await db.execute(select(User).where(User.id == user_id))
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.school))
+        .where(User.id == user_id)
+    )
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:

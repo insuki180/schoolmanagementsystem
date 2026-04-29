@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ school.name }} Analytics — SchoolMS{% endblock %}
+{% block page_title %}School Analytics{% endblock %}
+{% block content %}
+<div class="fade-in space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl overflow-hidden bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
+        {% if school.logo_url %}
+        <img src="{{ school.logo_url }}" alt="{{ school.name }} logo" class="w-full h-full object-cover">
+        {% else %}
+        <svg class="w-8 h-8 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
+        </svg>
+        {% endif %}
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold" style="color:var(--color-text)">{{ school.name }}</h1>
+        <p class="text-sm mt-1" style="color:var(--color-text-muted)">{{ school.address or "Address not provided" }}</p>
+      </div>
+    </div>
+    <a href="/schools" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border hover:shadow-sm active:scale-[0.98]"
+       style="color:var(--color-text-secondary);border-color:var(--color-border);background:var(--color-surface)">
+      Back to Schools
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm" style="color:var(--color-text-muted)">Students</p>
+      <p class="text-3xl font-bold mt-2" style="color:var(--color-text)">{{ summary.total_students }}</p>
+    </div>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm" style="color:var(--color-text-muted)">Teachers</p>
+      <p class="text-3xl font-bold mt-2" style="color:var(--color-text)">{{ summary.total_teachers }}</p>
+    </div>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm" style="color:var(--color-text-muted)">Classes</p>
+      <p class="text-3xl font-bold mt-2" style="color:var(--color-text)">{{ summary.total_classes }}</p>
+    </div>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm" style="color:var(--color-text-muted)">Average Marks</p>
+      <p class="text-3xl font-bold mt-2" style="color:var(--color-text)">{{ "%.1f"|format(summary.average_marks) }}</p>
+    </div>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm" style="color:var(--color-text-muted)">Attendance</p>
+      <p class="text-3xl font-bold mt-2" style="color:var(--color-text)">{{ "%.1f"|format(summary.attendance_pct) }}%</p>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="px-6 py-4 border-b flex items-center justify-between gap-3" style="border-color:var(--color-border)">
+      <h2 class="font-semibold text-base" style="color:var(--color-text)">Class Breakdown</h2>
+      <div class="text-xs" style="color:var(--color-text-muted)">Class-wise student count, marks, and attendance</div>
+    </div>
+    {% if class_breakdown %}
+    <div class="table-responsive">
+      <table class="w-full">
+        <thead>
+          <tr style="background:var(--color-bg)">
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Class</th>
+            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Students</th>
+            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Average Marks</th>
+            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Attendance</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y" style="border-color:var(--color-border-light)">
+          {% for item in class_breakdown %}
+          <tr>
+            <td class="px-6 py-4 text-sm font-semibold" style="color:var(--color-text)">{{ item.class.name }}</td>
+            <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ item.student_count }}</td>
+            <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ "%.1f"|format(item.average_marks) }}</td>
+            <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ "%.1f"|format(item.attendance_pct) }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="py-12 text-center text-sm" style="color:var(--color-text-muted)">
+      No classes available for this school yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

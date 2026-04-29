@@ -233,19 +233,34 @@ const Modal = {
 };
 
 /* ── Mobile Drawer ──────────────────────────────────────────── */
+function toggleSidebar(forceOpen) {
+  const overlay = document.getElementById("drawer-overlay");
+  const trigger = document.getElementById("drawer-trigger");
+  if (!overlay) return;
+
+  const shouldOpen = typeof forceOpen === "boolean"
+    ? forceOpen
+    : !overlay.classList.contains("active");
+
+  overlay.classList.toggle("active", shouldOpen);
+  if (trigger) {
+    trigger.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+  }
+}
+
 const Drawer = {
   init() {
     const trigger = document.getElementById("drawer-trigger");
     const overlay = document.getElementById("drawer-overlay");
     const close = document.getElementById("drawer-close");
 
-    const open = () => overlay?.classList.add("active");
-    const shut = () => overlay?.classList.remove("active");
-
-    trigger?.addEventListener("click", open);
-    close?.addEventListener("click", shut);
-    overlay?.addEventListener("click", e => { if (e.target === overlay) shut(); });
-    document.addEventListener("keydown", e => { if (e.key === "Escape" && overlay?.classList.contains("active")) shut(); });
+    trigger?.addEventListener("click", () => toggleSidebar());
+    close?.addEventListener("click", () => toggleSidebar(false));
+    overlay?.addEventListener("click", e => { if (e.target === overlay) toggleSidebar(false); });
+    overlay?.querySelectorAll("[data-nav-link]").forEach(link => {
+      link.addEventListener("click", () => toggleSidebar(false));
+    });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && overlay?.classList.contains("active")) toggleSidebar(false); });
   }
 };
 
@@ -333,3 +348,4 @@ document.addEventListener("DOMContentLoaded", () => {
 window.Toast = Toast;
 window.ThemeManager = ThemeManager;
 window.Modal = Modal;
+window.toggleSidebar = toggleSidebar;
