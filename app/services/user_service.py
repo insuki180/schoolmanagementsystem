@@ -1,5 +1,7 @@
 """User management service — CRUD operations for all user roles."""
 
+import secrets
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.user import User, UserRole
@@ -8,15 +10,21 @@ from app.models.class_ import Class
 from app.services.auth_service import hash_password
 
 
+def generate_temp_password() -> str:
+    """Generate a short temporary password for first login."""
+    return secrets.token_hex(4)
+
+
 async def create_school_admin(
-    db: AsyncSession, name: str, email: str, password: str,
+    db: AsyncSession, name: str, email: str,
     school_id: int, phone: str | None = None
-) -> User:
+) -> tuple[User, str]:
     """Create a school admin user."""
+    temp_password = generate_temp_password()
     user = User(
         name=name,
         email=email,
-        password_hash=hash_password(password),
+        password_hash=hash_password(temp_password),
         phone=phone,
         role=UserRole.SCHOOL_ADMIN,
         school_id=school_id,
@@ -24,18 +32,19 @@ async def create_school_admin(
     )
     db.add(user)
     await db.flush()
-    return user
+    return user, temp_password
 
 
 async def create_teacher(
-    db: AsyncSession, name: str, email: str, password: str,
+    db: AsyncSession, name: str, email: str,
     school_id: int, class_ids: list[int] = None, phone: str | None = None
-) -> User:
+) -> tuple[User, str]:
     """Create a teacher and assign to classes."""
+    temp_password = generate_temp_password()
     user = User(
         name=name,
         email=email,
-        password_hash=hash_password(password),
+        password_hash=hash_password(temp_password),
         phone=phone,
         role=UserRole.TEACHER,
         school_id=school_id,
@@ -53,25 +62,27 @@ async def create_teacher(
         user.taught_classes = list(classes)
         await db.flush()
 
-    return user
+    return user, temp_password
 
 
 async def create_student_and_parent(
     db: AsyncSession, student_name: str, class_id: int,
     parent_name: str, parent_email: str, parent_phone: str | None,
     school_id: int
-) -> tuple[Student, User]:
+) -> tuple[Student, User, str | None]:
     """Create a student and auto-create or link parent account."""
     # Check if parent already exists
     result = await db.execute(select(User).where(User.email == parent_email))
     parent = result.scalar_one_or_none()
+    temp_password = None
 
     if not parent:
         # Create parent account with default password
+        temp_password = generate_temp_password()
         parent = User(
             name=parent_name,
             email=parent_email,
-            password_hash=hash_password("parent123"),  # Default password
+            password_hash=hash_password(temp_password),
             phone=parent_phone,
             role=UserRole.PARENT,
             school_id=school_id,
@@ -90,7 +101,7 @@ async def create_student_and_parent(
     db.add(student)
     await db.flush()
 
-    return student, parent
+    return student, parent, temp_password
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:

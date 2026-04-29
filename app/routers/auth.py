@@ -105,6 +105,7 @@ async def change_password_page(
         "user": current_user,
         "error": None,
         "success": None,
+        "require_current_password": not current_user.must_change_password,
     })
 
 
@@ -112,7 +113,7 @@ async def change_password_page(
 async def change_password(
     request: Request,
     db: DBSession,
-    current_password: str = Form(...),
+    current_password: str = Form(""),
     new_password: str = Form(...),
     confirm_password: str = Form(...),
     current_user: User = Depends(get_current_user),
@@ -125,6 +126,7 @@ async def change_password(
             "user": current_user,
             "error": "Passwords do not match",
             "success": None,
+            "require_current_password": not current_user.must_change_password,
         })
 
     if len(new_password) < 6:
@@ -133,14 +135,19 @@ async def change_password(
             "user": current_user,
             "error": "Password must be at least 6 characters",
             "success": None,
+            "require_current_password": not current_user.must_change_password,
         })
 
-    if not verify_password(current_password, current_user.password_hash):
+    if (
+        not current_user.must_change_password
+        and not verify_password(current_password, current_user.password_hash)
+    ):
         return templates.TemplateResponse("auth/change_password.html", {
             "request": request,
             "user": current_user,
             "error": "Current password is incorrect",
             "success": None,
+            "require_current_password": True,
         })
 
     # Update password

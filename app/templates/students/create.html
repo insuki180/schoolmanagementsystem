@@ -25,15 +25,23 @@
         <p class="text-sm font-medium" style="color:var(--color-text)">{{ error }}</p>
     </div>
     {% endif %}
-    {% if success %}
-    <div class="mb-6 p-4 rounded-xl border flex items-center gap-3 slide-up"
+    {% if credentials %}
+    <div class="mb-6 p-5 rounded-2xl border slide-up space-y-3"
          style="background:var(--color-surface);border-color:var(--color-border);border-left:4px solid #10b981">
         <div class="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
             <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
         </div>
-        <p class="text-sm font-medium" style="color:var(--color-text)">{{ success }}</p>
+        <div>
+            <p class="text-sm font-semibold" style="color:var(--color-text)">{{ credentials.message }}</p>
+            <p class="text-xs mt-1" style="color:var(--color-text-muted)">{{ credentials.account_status }}</p>
+        </div>
+        <div class="rounded-xl border p-4 text-sm space-y-2"
+             style="background:var(--color-bg);border-color:var(--color-border)">
+            <p style="color:var(--color-text)"><span class="font-semibold">Login ID:</span> {{ credentials.login_id }}</p>
+            <p style="color:var(--color-text)"><span class="font-semibold">Temp Password:</span> {{ credentials.temp_password or "Existing parent password unchanged" }}</p>
+        </div>
     </div>
     {% endif %}
 

@@ -60,9 +60,9 @@ endblock %} {% block page_title %}Register Admin{% endblock %} {% block content
       {{ error }}
     </p>
   </div>
-  {% endif %} {% if success %}
+  {% endif %} {% if credentials %}
   <div
-    class="mb-6 p-4 rounded-xl border flex items-center gap-3 slide-up"
+    class="mb-6 p-5 rounded-2xl border slide-up space-y-3"
     style="
       background: var(--color-surface);
       border-color: var(--color-border);
@@ -86,9 +86,19 @@ endblock %} {% block page_title %}Register Admin{% endblock %} {% block content
         />
       </svg>
     </div>
-    <p class="text-sm font-medium" style="color: var(--color-text)">
-      {{ success }}
-    </p>
+    <div>
+      <p class="text-sm font-semibold" style="color: var(--color-text)">
+        {{ credentials.message }}
+      </p>
+      <p class="text-xs mt-1" style="color: var(--color-text-muted)">
+        Share these first-login credentials with the new school admin.
+      </p>
+    </div>
+    <div class="rounded-xl border p-4 text-sm space-y-2"
+         style="background: var(--color-bg); border-color: var(--color-border)">
+      <p style="color: var(--color-text)"><span class="font-semibold">Login ID:</span> {{ credentials.login_id }}</p>
+      <p style="color: var(--color-text)"><span class="font-semibold">Temp Password:</span> {{ credentials.temp_password }}</p>
+    </div>
   </div>
   {% endif %}
 
@@ -171,20 +181,9 @@ endblock %} {% block page_title %}Register Admin{% endblock %} {% block content
       </div>
 
       <div class="grid sm:grid-cols-2 gap-5">
-        <div>
-          <label
-            class="block text-sm font-semibold mb-1.5"
-            style="color: var(--color-text)"
-            >Account Password</label
-          >
-          <input
-            type="password"
-            name="password"
-            required
-            minlength="6"
-            placeholder="Minimum 6 characters"
-            class="input-field w-full"
-          />
+        <div class="rounded-xl border p-4 text-sm"
+             style="background: var(--color-bg); border-color: var(--color-border); color: var(--color-text-muted)">
+          A temporary password will be generated automatically and must be changed on first login.
         </div>
         <div>
           <label

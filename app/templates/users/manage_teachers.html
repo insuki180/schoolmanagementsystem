@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Manage Teachers — SchoolMS{% endblock %}
+{% block page_title %}Manage Teachers{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto fade-in space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold" style="color:var(--color-text)">Teachers</h1>
+      <p class="text-sm mt-1" style="color:var(--color-text-muted)">
+        Review teacher accounts and share temporary login credentials when creating new staff.
+      </p>
+    </div>
+    <a href="/users/create-teacher"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white
+              bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800
+              transition-all shadow-sm shadow-primary-500/20 active:scale-[0.98]">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+      </svg>
+      Create Teacher
+    </a>
+  </div>
+
+  <div class="rounded-2xl border shadow-sm overflow-hidden"
+       style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="px-6 py-4 border-b" style="border-color:var(--color-border)">
+      <h2 class="font-semibold text-base" style="color:var(--color-text)">Teacher Directory</h2>
+    </div>
+
+    {% if teachers %}
+    <div class="table-responsive">
+      <table class="w-full">
+        <thead>
+          <tr style="background:var(--color-bg)">
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Name</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Email</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Phone</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Password Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y" style="border-color:var(--color-border-light)">
+          {% for teacher in teachers %}
+          <tr>
+            <td class="px-6 py-4 text-sm font-medium" style="color:var(--color-text)">{{ teacher.name }}</td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ teacher.email }}</td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ teacher.phone or "—" }}</td>
+            <td class="px-6 py-4">
+              {% if teacher.must_change_password %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
+                           bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                Temporary password active
+              </span>
+              {% else %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
+                           bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                Password updated
+              </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="py-14 text-center">
+      <p class="text-sm font-medium" style="color:var(--color-text)">No teachers yet</p>
+      <p class="text-xs mt-1 mb-4" style="color:var(--color-text-muted)">
+        Create your first teacher account to get started.
+      </p>
+      <a href="/users/create-teacher" class="text-sm font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400">
+        Create a teacher
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
