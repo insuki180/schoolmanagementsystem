@@ -86,6 +86,53 @@
         </div>
     </div>
 
+    {% if can_manage_mapping %}
+    <div class="grid lg:grid-cols-2 gap-5">
+        <form method="POST" action="/classes/{{ class.id }}/assign-teacher" class="rounded-2xl border shadow-sm p-5" style="background:var(--color-surface);border-color:var(--color-border)">
+            <h2 class="font-semibold text-base mb-4" style="color:var(--color-text)">Assign Class Teacher</h2>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <select name="class_teacher_id" class="input-field flex-1">
+                    <option value="">Unassigned</option>
+                    {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}" {% if class.class_teacher_id == teacher.id %}selected{% endif %}>{{ teacher.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn-primary">Save</button>
+            </div>
+        </form>
+
+        <form method="POST" action="/classes/{{ class.id }}/assign-subject" class="rounded-2xl border shadow-sm p-5" style="background:var(--color-surface);border-color:var(--color-border)">
+            <h2 class="font-semibold text-base mb-4" style="color:var(--color-text)">Assign Subject Teacher</h2>
+            <div class="grid sm:grid-cols-2 gap-3">
+                <select name="subject_id" class="input-field" required>
+                    <option value="">Select subject</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}">{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="teacher_id" class="input-field" required>
+                    <option value="">Select teacher</option>
+                    {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}">{{ teacher.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn-primary">Assign Subject</button>
+            </div>
+            {% if subject_assignments %}
+            <div class="mt-4 pt-4 border-t space-y-2" style="border-color:var(--color-border-light)">
+                {% for assignment in subject_assignments %}
+                <p class="text-sm" style="color:var(--color-text-secondary)">
+                    {{ assignment.subject.name if assignment.subject else 'Subject' }} -> {{ assignment.teacher.name if assignment.teacher else 'Unassigned' }}
+                </p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </form>
+    </div>
+    {% endif %}
+
     <!-- Student Roster -->
     <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
         <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border);background:var(--color-bg)">
@@ -164,6 +211,26 @@
         </div>
         {% endif %}
     </div>
+
+    {% if absence_responses %}
+    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="px-6 py-4 border-b" style="border-color:var(--color-border);background:var(--color-bg)">
+            <h2 class="font-semibold text-base" style="color:var(--color-text)">Parent Absence Responses</h2>
+        </div>
+        <div class="divide-y" style="border-color:var(--color-border-light)">
+            {% for item in absence_responses %}
+            <div class="px-6 py-4">
+                <p class="font-semibold text-sm" style="color:var(--color-text)">{{ item.student.name }}</p>
+                <p class="text-xs mt-1" style="color:var(--color-text-muted)">
+                    {{ item.response.date.strftime('%b %d, %Y') }}
+                    {% if item.response.leave_days %}• Leave: {{ item.response.leave_days }} day{% if item.response.leave_days != 1 %}s{% endif %}{% endif %}
+                </p>
+                <p class="text-sm mt-2" style="color:var(--color-text-secondary)">{{ item.response.message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
 </div>
 {% endblock %}

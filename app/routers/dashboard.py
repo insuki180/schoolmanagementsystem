@@ -13,6 +13,7 @@ from app.models.attendance import Attendance
 from app.models.notification import Notification
 from app.models.mark import Mark
 from app.services.notification_service import get_notifications_for_parent
+from app.services.absence_response_service import get_parent_absence_alerts
 from datetime import date
 
 router = APIRouter(tags=["dashboard"])
@@ -227,10 +228,12 @@ async def parent_dashboard(request: Request, db, current_user: User):
 
     # Get notifications
     notifications = await get_notifications_for_parent(db, current_user.id, current_user.school_id)
+    absence_alerts = await get_parent_absence_alerts(db, current_user)
 
     return templates.TemplateResponse("dashboard/parent.html", {
         "request": request,
         "user": current_user,
         "children": children_data,
         "notifications": notifications,
+        "absence_alerts": absence_alerts,
     })

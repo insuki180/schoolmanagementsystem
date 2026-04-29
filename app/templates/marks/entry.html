@@ -4,6 +4,12 @@
 {% block content %}
 <div class="fade-in space-y-6">
 
+    {% if error %}
+    <div class="p-4 rounded-xl border" style="background:var(--color-surface);border-color:#fecaca;color:#b91c1c">
+        {{ error }}
+    </div>
+    {% endif %}
+
     <!-- Header -->
     <div>
         <p class="text-sm" style="color:var(--color-text-muted)">Select a class, subject, and exam to record student performance.</p>

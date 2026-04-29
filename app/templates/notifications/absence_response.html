@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Absence Response — SchoolMS{% endblock %}
+{% block page_title %}Absence Response{% endblock %}
+{% block content %}
+<div class="fade-in space-y-6 max-w-2xl">
+    <div>
+        <h1 class="text-2xl font-bold" style="color:var(--color-text)">Respond to Absence</h1>
+        <p class="text-sm mt-1" style="color:var(--color-text-muted)">
+            {{ student.name }} was marked absent on {{ absence_date.strftime('%b %d, %Y') }}.
+        </p>
+    </div>
+
+    <form method="POST" class="rounded-2xl border shadow-sm p-6 space-y-5" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div>
+            <label for="message" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Reason</label>
+            <textarea id="message" name="message" required rows="5" class="input-field w-full" placeholder="Please explain the absence and any next steps.">{% if existing_response %}{{ existing_response.message }}{% endif %}</textarea>
+        </div>
+        <div>
+            <label for="leave_days" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Leave Duration (optional)</label>
+            <input id="leave_days" type="number" min="0" name="leave_days" value="{{ existing_response.leave_days if existing_response and existing_response.leave_days is not none else 0 }}" class="input-field w-full sm:w-40">
+        </div>
+        <div class="flex gap-3">
+            <button type="submit" class="btn-primary">Submit Response</button>
+            <a href="/notifications" class="px-4 py-2 rounded-xl border text-sm font-semibold" style="border-color:var(--color-border);color:var(--color-text-secondary)">Back</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

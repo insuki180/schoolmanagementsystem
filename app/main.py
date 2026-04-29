@@ -49,11 +49,54 @@ async def ensure_school_logo_column(engine):
         logger.warning("Could not verify schools.logo_url column: %s", exc)
 
 
+async def ensure_academic_control_schema(engine):
+    """Keep the academic permission tables compatible on existing deployments."""
+    statements = [
+        (
+            "ALTER TABLE classes "
+            "ADD COLUMN IF NOT EXISTS class_teacher_id INTEGER REFERENCES users(id)"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS class_subjects ("
+            "id SERIAL PRIMARY KEY, "
+            "class_id INTEGER NOT NULL REFERENCES classes(id), "
+            "subject_id INTEGER NOT NULL REFERENCES subjects(id), "
+            "teacher_id INTEGER NOT NULL REFERENCES users(id))"
+        ),
+        (
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_class_subject_assignment_idx "
+            "ON class_subjects (class_id, subject_id)"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS absence_responses ("
+            "id SERIAL PRIMARY KEY, "
+            "student_id INTEGER NOT NULL REFERENCES students(id), "
+            "date DATE NOT NULL, "
+            "message TEXT NOT NULL, "
+            "is_read BOOLEAN NOT NULL DEFAULT TRUE, "
+            "created_by_parent INTEGER NOT NULL REFERENCES users(id), "
+            "leave_days INTEGER NULL, "
+            "created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+        ),
+        (
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_absence_response_student_date_idx "
+            "ON absence_responses (student_id, date)"
+        ),
+    ]
+    try:
+        async with engine.begin() as conn:
+            for statement in statements:
+                await conn.execute(text(statement))
+    except Exception as exc:
+        logger.warning("Could not verify academic control schema: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     await wait_for_db(engine)
     await ensure_school_logo_column(engine)
+    await ensure_academic_control_schema(engine)
     yield
     # Shutdown
     await engine.dispose()

@@ -1,17 +1,25 @@
-"""Marks routes — entry and viewing."""
+"""Marks routes — role-scoped entry and viewing."""
 
-from fastapi import APIRouter, Request, Depends, Form
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from app.dependencies import DBSession, require_role, get_current_user
 from app.models.user import User, UserRole
-from app.models.class_ import Class, teacher_classes
+from app.models.class_ import Class
 from app.models.student import Student
 from app.models.subject import Subject
 from app.models.exam import Exam
 from app.models.mark import Mark
 from app.services.mark_service import bulk_upsert_marks, get_student_marks
+from app.services.permissions import (
+    can_edit_marks,
+    can_view_student,
+    get_allowed_classes,
+    get_allowed_subjects_for_class,
+    is_school_admin,
+    is_super_admin,
+)
 
 router = APIRouter(prefix="/marks", tags=["marks"])
 templates = Jinja2Templates(directory="app/templates")
@@ -19,7 +27,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("")
 async def marks_index(
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN)),
+    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
     return RedirectResponse(url="/marks/entry", status_code=303)
 
@@ -27,23 +35,46 @@ async def marks_index(
 @router.get("/entry", response_class=HTMLResponse)
 async def marks_entry_page(request: Request, db: DBSession,
     class_id: int = None, subject_id: int = None, exam_id: int = None,
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
-    role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
-    if role == "teacher":
-        cls_result = await db.execute(
-            select(Class).join(teacher_classes).where(
-                teacher_classes.c.teacher_id == current_user.id).order_by(Class.name))
-    else:
-        cls_result = await db.execute(
-            select(Class).where(Class.school_id == current_user.school_id).order_by(Class.name))
+    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
+    classes = await get_allowed_classes(db, current_user)
+    allowed_class_ids = {cls.id for cls in classes}
 
-    subjects_result = await db.execute(
-        select(Subject).where(Subject.school_id == current_user.school_id).order_by(Subject.name))
-    exams_result = await db.execute(
-        select(Exam).where(Exam.school_id == current_user.school_id).order_by(Exam.name))
+    if class_id and class_id not in allowed_class_ids:
+        raise HTTPException(status_code=403, detail="You do not have access to this class.")
+
+    selected_class = None
+    if class_id:
+        selected_class = next((cls for cls in classes if cls.id == class_id), None)
+
+    if selected_class:
+        subjects = await get_allowed_subjects_for_class(db, current_user, selected_class.id)
+        exams_query = select(Exam).where(Exam.school_id == selected_class.school_id).order_by(Exam.name)
+    elif is_super_admin(current_user):
+        subject_result = await db.execute(select(Subject).order_by(Subject.name))
+        subjects = list(subject_result.scalars().all())
+        exams_query = select(Exam).order_by(Exam.name)
+    elif is_school_admin(current_user):
+        subject_result = await db.execute(
+            select(Subject).where(Subject.school_id == current_user.school_id).order_by(Subject.name)
+        )
+        subjects = list(subject_result.scalars().all())
+        exams_query = select(Exam).where(Exam.school_id == current_user.school_id).order_by(Exam.name)
+    else:
+        subjects = []
+        exams_query = (
+            select(Exam)
+            .where(Exam.school_id == current_user.school_id)
+            .order_by(Exam.name)
+        )
+    exams_result = await db.execute(exams_query)
+    exams = list(exams_result.scalars().all())
+    allowed_subject_ids = {subject.id for subject in subjects}
 
     students = []
-    if class_id:
+    error = None
+    if class_id and subject_id and subject_id not in allowed_subject_ids:
+        error = "You do not have permission to enter marks for that subject."
+    elif class_id:
         result = await db.execute(
             select(Student).where(Student.class_id == class_id).order_by(Student.name))
         students_list = result.scalars().all()
@@ -63,20 +94,23 @@ async def marks_entry_page(request: Request, db: DBSession,
 
     return templates.TemplateResponse("marks/entry.html", {
         "request": request, "user": current_user,
-        "classes": cls_result.scalars().all(),
-        "subjects": subjects_result.scalars().all(),
-        "exams": exams_result.scalars().all(),
+        "classes": classes,
+        "subjects": subjects,
+        "exams": exams,
         "students": students,
         "selected_class": class_id, "selected_subject": subject_id,
         "selected_exam": exam_id,
-        "success": None, "error": None,
+        "success": None, "error": error,
     })
 
 
 @router.post("/entry")
 async def marks_entry(request: Request, db: DBSession,
     class_id: int = Form(...), subject_id: int = Form(...), exam_id: int = Form(...),
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
+    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
+    if not await can_edit_marks(current_user, db, class_id, subject_id):
+        raise HTTPException(status_code=403, detail="You do not have permission to edit marks for this class/subject.")
+
     form = await request.form()
     entries = []
     for key, value in form.multi_items():
@@ -101,6 +135,9 @@ async def marks_entry(request: Request, db: DBSession,
 @router.get("/view/{student_id}", response_class=HTMLResponse)
 async def view_marks(request: Request, student_id: int, db: DBSession,
     current_user: User = Depends(get_current_user)):
+    if not await can_view_student(current_user, db, student_id):
+        raise HTTPException(status_code=403, detail="You do not have permission to view this student's marks.")
+
     student_result = await db.execute(select(Student).where(Student.id == student_id))
     student = student_result.scalar_one_or_none()
     if not student:

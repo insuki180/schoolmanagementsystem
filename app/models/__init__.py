@@ -2,18 +2,20 @@
 
 from app.models.school import School
 from app.models.user import User
-from app.models.class_ import Class, teacher_classes
+from app.models.class_ import Class, ClassSubject, teacher_classes
 from app.models.student import Student
 from app.models.subject import Subject
 from app.models.exam import Exam
 from app.models.attendance import Attendance
 from app.models.notification import Notification, notification_classes
 from app.models.mark import Mark
+from app.models.absence_response import AbsenceResponse
 
 __all__ = [
     "School",
     "User",
     "Class",
+    "ClassSubject",
     "teacher_classes",
     "Student",
     "Subject",
@@ -22,4 +24,5 @@ __all__ = [
     "Notification",
     "notification_classes",
     "Mark",
+    "AbsenceResponse",
 ]

@@ -1,15 +1,25 @@
-"""Notification routes — send and view."""
+"""Notification routes — send, view, and parent absence responses."""
 
-from fastapi import APIRouter, Request, Depends, Form
+from datetime import date
+
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from app.dependencies import DBSession, require_role, get_current_user
+from app.models.notification import Notification
 from app.models.user import User, UserRole
+from app.models.student import Student
 from app.models.class_ import Class
 from app.services.notification_service import (
     send_notification, get_notifications_for_school, get_notifications_for_parent
 )
+from app.services.absence_response_service import (
+    get_parent_absence_alerts,
+    get_visible_absence_responses,
+    save_absence_response,
+)
+from app.services.permissions import can_view_student, is_parent
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 templates = Jinja2Templates(directory="app/templates")
@@ -63,10 +73,80 @@ async def list_notifications(request: Request, db: DBSession,
     role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
     if role == "parent":
         notifications = await get_notifications_for_parent(db, current_user.id, current_user.school_id)
+        absence_alerts = await get_parent_absence_alerts(db, current_user)
+        absence_responses = []
+    elif role == "super_admin":
+        result = await db.execute(select(Notification).order_by(Notification.created_at.desc()).limit(50))
+        notifications = list(result.scalars().all())
+        absence_alerts = []
+        absence_responses = await get_visible_absence_responses(db, current_user)
     else:
         notifications = await get_notifications_for_school(db, current_user.school_id)
+        absence_alerts = []
+        absence_responses = await get_visible_absence_responses(db, current_user)
 
     return templates.TemplateResponse("notifications/list.html", {
         "request": request, "user": current_user,
         "notifications": notifications,
+        "absence_alerts": absence_alerts,
+        "absence_responses": absence_responses,
     })
+
+
+@router.get("/absence/{student_id}/{absence_date}", response_class=HTMLResponse)
+async def absence_response_page(
+    request: Request,
+    student_id: int,
+    absence_date: str,
+    db: DBSession,
+    current_user: User = Depends(require_role(UserRole.PARENT)),
+):
+    if not await can_view_student(current_user, db, student_id):
+        raise HTTPException(status_code=403, detail="You can only respond for your own child.")
+
+    student_result = await db.execute(select(Student).where(Student.id == student_id))
+    student = student_result.scalar_one_or_none()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found.")
+
+    response_date = date.fromisoformat(absence_date)
+    alerts = await get_parent_absence_alerts(db, current_user)
+    alert = next((item for item in alerts if item["student"].id == student_id and item["date"] == response_date), None)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Absence notification not found.")
+
+    return templates.TemplateResponse("notifications/absence_response.html", {
+        "request": request,
+        "user": current_user,
+        "student": student,
+        "absence_date": response_date,
+        "existing_response": alert["response"],
+        "error": None,
+    })
+
+
+@router.post("/absence/{student_id}/{absence_date}")
+async def submit_absence_response(
+    request: Request,
+    student_id: int,
+    absence_date: str,
+    db: DBSession,
+    message: str = Form(...),
+    leave_days: int = Form(0),
+    current_user: User = Depends(require_role(UserRole.PARENT)),
+):
+    try:
+        await save_absence_response(
+            db,
+            student_id=student_id,
+            absence_date=date.fromisoformat(absence_date),
+            message=message,
+            leave_days=leave_days or None,
+            parent_user=current_user,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return RedirectResponse(url="/notifications", status_code=303)

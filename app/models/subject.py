@@ -15,6 +15,7 @@ class Subject(Base):
     # Relationships
     school = relationship("School", back_populates="subjects")
     marks = relationship("Mark", back_populates="subject", lazy="selectin")
+    class_assignments = relationship("ClassSubject", back_populates="subject", lazy="selectin")
 
     def __repr__(self):
         return f"<Subject(id={self.id}, name='{self.name}')>"

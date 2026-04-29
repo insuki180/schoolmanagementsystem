@@ -27,6 +27,7 @@ class Student(Base):
     school = relationship("School", back_populates="students")
     attendance_records = relationship("Attendance", back_populates="student", lazy="selectin")
     marks = relationship("Mark", back_populates="student", lazy="selectin")
+    absence_responses = relationship("AbsenceResponse", back_populates="student", lazy="selectin")
 
     def __repr__(self):
         return f"<Student(id={self.id}, name='{self.name}')>"

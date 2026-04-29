@@ -37,7 +37,10 @@ class User(Base):
         back_populates="teachers",
         lazy="selectin",
     )
+    homeroom_classes = relationship("Class", foreign_keys="Class.class_teacher_id", back_populates="class_teacher")
+    subject_assignments = relationship("ClassSubject", back_populates="teacher", lazy="selectin")
     sent_notifications = relationship("Notification", back_populates="sent_by_user", lazy="selectin")
+    absence_responses = relationship("AbsenceResponse", back_populates="parent", lazy="selectin")
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"

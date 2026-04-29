@@ -14,6 +14,27 @@
 
     <!-- Main Content (Children) -->
     <div class="lg:col-span-2 space-y-6">
+      {% if absence_alerts %}
+      <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="px-6 py-4 border-b" style="border-color:var(--color-border);background:var(--color-bg)">
+          <h2 class="font-semibold text-base" style="color:var(--color-text)">Absence Actions Needed</h2>
+        </div>
+        <div class="divide-y" style="border-color:var(--color-border-light)">
+          {% for alert in absence_alerts %}
+          <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p class="font-semibold text-sm" style="color:var(--color-text)">{{ alert.student.name }} • {{ alert.class_name }}</p>
+              <p class="text-xs mt-1" style="color:var(--color-text-muted)">Absent on {{ alert.date.strftime('%b %d, %Y') }}</p>
+            </div>
+            <a href="/notifications/absence/{{ alert.student.id }}/{{ alert.date.isoformat() }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors">
+              {% if alert.response %}Update Response{% else %}Respond{% endif %}
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       {% for child in children %}
       <div class="rounded-2xl border shadow-sm overflow-hidden slide-up" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:{{ loop.index0 * 0.1 }}s">
 

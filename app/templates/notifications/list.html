@@ -10,7 +10,7 @@
             <h1 class="text-2xl font-bold" style="color:var(--color-text)">Notifications</h1>
             <p class="text-sm mt-1" style="color:var(--color-text-muted)">Stay updated with recent alerts and school-wide announcements.</p>
         </div>
-        {% if user.role in ['super_admin', 'school_admin', 'teacher'] %}
+        {% if (user.role.value if user.role.value is defined else user.role) in ['super_admin', 'school_admin', 'teacher'] %}
         <div>
             <a href="/notifications/send" class="btn-primary inline-flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -21,6 +21,31 @@
         </div>
         {% endif %}
     </div>
+
+    {% if absence_alerts %}
+    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="px-6 py-4 border-b" style="border-color:var(--color-border);background:var(--color-bg)">
+            <h2 class="font-semibold text-base" style="color:var(--color-text)">Absence Notifications</h2>
+        </div>
+        <div class="divide-y" style="border-color:var(--color-border-light)">
+            {% for alert in absence_alerts %}
+            <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <p class="font-semibold text-sm" style="color:var(--color-text)">{{ alert.student.name }} • {{ alert.class_name }}</p>
+                    <p class="text-xs mt-1" style="color:var(--color-text-muted)">Absent on {{ alert.date.strftime('%b %d, %Y') }}</p>
+                    {% if alert.response %}
+                    <p class="text-sm mt-2" style="color:var(--color-text-secondary)">{{ alert.response.message }}</p>
+                    {% endif %}
+                </div>
+                <a href="/notifications/absence/{{ alert.student.id }}/{{ alert.date.isoformat() }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors">
+                    {% if alert.response %}Update Response{% else %}Respond{% endif %}
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Notifications List -->
     <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
@@ -75,6 +100,30 @@
         </div>
         {% endif %}
     </div>
+
+    {% if absence_responses %}
+    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="px-6 py-4 border-b" style="border-color:var(--color-border);background:var(--color-bg)">
+            <h2 class="font-semibold text-base" style="color:var(--color-text)">Parent Absence Responses</h2>
+        </div>
+        <div class="divide-y" style="border-color:var(--color-border-light)">
+            {% for item in absence_responses %}
+            <div class="px-6 py-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <p class="font-semibold text-sm" style="color:var(--color-text)">{{ item.student.name }} • {{ item.class_name }}</p>
+                        <p class="text-xs mt-1" style="color:var(--color-text-muted)">
+                            {{ item.response.date.strftime('%b %d, %Y') }} • Parent: {{ item.parent.name }}
+                            {% if item.response.leave_days %}• Leave: {{ item.response.leave_days }} day{% if item.response.leave_days != 1 %}s{% endif %}{% endif %}
+                        </p>
+                    </div>
+                </div>
+                <p class="text-sm mt-2" style="color:var(--color-text-secondary)">{{ item.response.message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
 </div>
 {% endblock %}
