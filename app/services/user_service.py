@@ -8,6 +8,7 @@ from app.models.user import User, UserRole
 from app.models.student import Student
 from app.models.class_ import Class
 from app.services.auth_service import hash_password
+from app.services.contact_utils import validate_phone_number
 
 
 def generate_temp_password() -> str:
@@ -25,7 +26,7 @@ async def create_school_admin(
         name=name,
         email=email,
         password_hash=hash_password(temp_password),
-        phone=phone,
+        phone_number=validate_phone_number(phone),
         role=UserRole.SCHOOL_ADMIN,
         school_id=school_id,
         must_change_password=True,
@@ -45,7 +46,7 @@ async def create_teacher(
         name=name,
         email=email,
         password_hash=hash_password(temp_password),
-        phone=phone,
+        phone_number=validate_phone_number(phone, required=True),
         role=UserRole.TEACHER,
         school_id=school_id,
         must_change_password=True,
@@ -71,6 +72,7 @@ async def create_student_and_parent(
     school_id: int
 ) -> tuple[Student, User, str | None]:
     """Create a student and auto-create or link parent account."""
+    normalized_phone = validate_phone_number(parent_phone, required=True)
     # Check if parent already exists
     result = await db.execute(select(User).where(User.email == parent_email))
     parent = result.scalar_one_or_none()
@@ -83,13 +85,15 @@ async def create_student_and_parent(
             name=parent_name,
             email=parent_email,
             password_hash=hash_password(temp_password),
-            phone=parent_phone,
+            phone_number=normalized_phone,
             role=UserRole.PARENT,
             school_id=school_id,
             must_change_password=True,
         )
         db.add(parent)
         await db.flush()
+    elif not parent.phone_number:
+        parent.phone_number = normalized_phone
 
     # Create student
     student = Student(

@@ -70,7 +70,7 @@ async def create_teacher_page(request: Request, db: DBSession,
 @router.post("/create-teacher")
 async def create_teacher_action(request: Request, db: DBSession,
     name: str = Form(...), email: str = Form(...),
-    phone: str = Form(""),
+    phone: str = Form(...),
     current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN))):
     form = await request.form()
     class_ids = [int(v) for k, v in form.multi_items() if k == "class_ids"]
@@ -127,7 +127,7 @@ async def create_student_page(request: Request, db: DBSession,
 async def create_student_action(request: Request, db: DBSession,
     student_name: str = Form(...), class_id: int = Form(...),
     parent_name: str = Form(...), parent_email: str = Form(...),
-    parent_phone: str = Form(""),
+    parent_phone: str = Form(...),
     current_user: User = Depends(require_role(UserRole.TEACHER))):
     try:
         student, parent, temp_password = await create_student_and_parent(

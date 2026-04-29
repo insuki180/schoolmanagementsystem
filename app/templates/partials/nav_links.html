@@ -6,11 +6,13 @@
   {% if role == 'super_admin' %}
   <li><a href="/schools" data-nav-link class="block px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">Schools</a></li>
   <li><a href="/users/create-admin" data-nav-link class="block px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">Create School Admin</a></li>
+  <li><a href="/import/students" data-nav-link class="block px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">Student CSV</a></li>
   {% endif %}
   {% if role == 'school_admin' %}
   <li><a href="/classes" data-nav-link class="block px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">Classes</a></li>
   <li><a href="/users/create-teacher" data-nav-link class="block px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">Create Teacher</a></li>
   <li><a href="/users/teachers" data-nav-link class="block px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">Manage Teachers</a></li>
+  <li><a href="/import/students" data-nav-link class="block px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">Student CSV</a></li>
   {% endif %}
   {% if role == 'teacher' %}
   <li><a href="/users/create-student" data-nav-link class="block px-4 py-2 rounded-lg hover:bg-white/10 transition-colors">Create Student + Parent</a></li>

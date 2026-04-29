@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import logging
 from sqlalchemy import text
 from app.database import engine, Base
-from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes
+from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports
 
 
 # Configure basic logging
@@ -91,12 +91,29 @@ async def ensure_academic_control_schema(engine):
         logger.warning("Could not verify academic control schema: %s", exc)
 
 
+async def ensure_parent_contact_schema(engine):
+    """Keep parent contact/profile columns compatible on existing deployments."""
+    statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20)",
+        "UPDATE users SET phone_number = REGEXP_REPLACE(COALESCE(phone, ''), '\\D', '', 'g') WHERE phone_number IS NULL AND phone IS NOT NULL",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS blood_group VARCHAR(20)",
+        "ALTER TABLE students ADD COLUMN IF NOT EXISTS address TEXT",
+    ]
+    try:
+        async with engine.begin() as conn:
+            for statement in statements:
+                await conn.execute(text(statement))
+    except Exception as exc:
+        logger.warning("Could not verify parent contact schema: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     await wait_for_db(engine)
     await ensure_school_logo_column(engine)
     await ensure_academic_control_schema(engine)
+    await ensure_parent_contact_schema(engine)
     yield
     # Shutdown
     await engine.dispose()
@@ -127,6 +144,7 @@ app.include_router(notifications.router)
 app.include_router(exams.router)
 app.include_router(marks.router)
 app.include_router(classes.router)
+app.include_router(student_imports.router)
 
 
 @app.exception_handler(Exception)

@@ -1,7 +1,7 @@
 """Dashboard routes — role-based views."""
 
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, func
 from app.dependencies import DBSession, get_current_user
@@ -14,6 +14,12 @@ from app.models.notification import Notification
 from app.models.mark import Mark
 from app.services.notification_service import get_notifications_for_parent
 from app.services.absence_response_service import get_parent_absence_alerts
+from app.services.parent_portal_service import (
+    build_parent_notification_cards,
+    get_teacher_contacts_for_student,
+    update_student_profile,
+)
+from app.services.permissions import can_view_student
 from datetime import date
 
 router = APIRouter(tags=["dashboard"])
@@ -218,17 +224,26 @@ async def parent_dashboard(request: Request, db, current_user: User):
             select(Class).where(Class.id == child.class_id)
         )
         cls = class_result.scalar_one_or_none()
+        contacts = await get_teacher_contacts_for_student(db, child)
 
         children_data.append({
             "student": child,
             "class_name": cls.name if cls else "N/A",
             "attendance": attendance,
             "marks": marks,
+            "teacher_contacts": contacts,
+            "notification_cards": [],
         })
 
     # Get notifications
     notifications = await get_notifications_for_parent(db, current_user.id, current_user.school_id)
     absence_alerts = await get_parent_absence_alerts(db, current_user)
+    for child_data in children_data:
+        child_data["notification_cards"] = build_parent_notification_cards(
+            notifications=notifications,
+            absence_alerts=absence_alerts,
+            student_id=child_data["student"].id,
+        )
 
     return templates.TemplateResponse("dashboard/parent.html", {
         "request": request,
@@ -237,3 +252,32 @@ async def parent_dashboard(request: Request, db, current_user: User):
         "notifications": notifications,
         "absence_alerts": absence_alerts,
     })
+
+
+@router.post("/parent/student/update")
+async def parent_update_student(
+    request: Request,
+    db: DBSession,
+    student_id: int = Form(...),
+    blood_group: str = Form(""),
+    address: str = Form(""),
+    current_user: User = Depends(get_current_user),
+):
+    role = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+    if role != "parent":
+        raise HTTPException(status_code=403, detail="Only parents can update student details.")
+
+    try:
+        await update_student_profile(
+            db,
+            parent_user=current_user,
+            student_id=student_id,
+            blood_group=blood_group,
+            address=address,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return RedirectResponse(url="/dashboard", status_code=303)

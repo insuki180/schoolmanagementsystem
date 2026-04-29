@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Student CSV Management — SchoolMS{% endblock %}
+{% block page_title %}Student CSV Management{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto fade-in space-y-6">
+    <div>
+        <h1 class="text-2xl font-bold" style="color:var(--color-text)">Bulk Student Data</h1>
+        <p class="text-sm mt-1" style="color:var(--color-text-muted)">Download the CSV template, import student and parent records, or export existing student data.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-4">
+        <a href="/import/students/template" class="rounded-2xl border shadow-sm p-5 transition-colors hover:bg-slate-50/50" style="background:var(--color-surface);border-color:var(--color-border)">
+            <p class="font-semibold" style="color:var(--color-text)">Download Template</p>
+            <p class="text-sm mt-2" style="color:var(--color-text-muted)">Get the required CSV headers only.</p>
+        </a>
+        <form method="POST" action="/import/students" enctype="multipart/form-data" class="rounded-2xl border shadow-sm p-5 space-y-4" style="background:var(--color-surface);border-color:var(--color-border)">
+            <div>
+                <p class="font-semibold" style="color:var(--color-text)">Upload CSV</p>
+                <p class="text-sm mt-2" style="color:var(--color-text-muted)">Create students and parent accounts in bulk.</p>
+            </div>
+            {% if schools %}
+            <select name="school_id" class="input-field w-full" required>
+                <option value="">Select school</option>
+                {% for school in schools %}
+                <option value="{{ school.id }}">{{ school.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <input type="file" name="csv_file" accept=".csv" required class="input-field w-full">
+            <button type="submit" class="btn-primary w-full justify-center">Upload CSV</button>
+        </form>
+        <a href="/export/students" class="rounded-2xl border shadow-sm p-5 transition-colors hover:bg-slate-50/50" style="background:var(--color-surface);border-color:var(--color-border)">
+            <p class="font-semibold" style="color:var(--color-text)">Download Student Data</p>
+            <p class="text-sm mt-2" style="color:var(--color-text-muted)">Export current student and parent records as CSV.</p>
+        </a>
+    </div>
+
+    <div class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
+        <h2 class="font-semibold text-base mb-3" style="color:var(--color-text)">Template Format</h2>
+        <code class="block text-sm p-4 rounded-xl" style="background:var(--color-bg);color:var(--color-text-secondary)">{{ template_headers|join(',') }}</code>
+    </div>
+
+    {% if error %}
+    <div class="p-4 rounded-xl border" style="background:var(--color-surface);border-color:#fecaca;color:#b91c1c">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    {% if summary %}
+    <div class="rounded-2xl border shadow-sm p-6 space-y-5" style="background:var(--color-surface);border-color:var(--color-border)">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <h2 class="font-semibold text-base" style="color:var(--color-text)">Import Summary</h2>
+                <p class="text-sm mt-1" style="color:var(--color-text-muted)">
+                    School: {{ summary.school.name }} • Processed: {{ summary.total_rows }} • Success: {{ summary.success_count }} • Failed: {{ summary.failed_rows|length }}
+                </p>
+            </div>
+            {% if summary.credentials_token %}
+            <a href="/import/students/credentials/{{ summary.credentials_token }}" class="btn-primary">Download Credentials CSV</a>
+            {% endif %}
+        </div>
+
+        {% if summary.failed_rows %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr style="background:var(--color-bg);color:var(--color-text-muted)">
+                        <th class="text-left px-4 py-3">Row</th>
+                        <th class="text-left px-4 py-3">Student</th>
+                        <th class="text-left px-4 py-3">Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for failure in summary.failed_rows %}
+                    <tr style="border-top:1px solid var(--color-border-light)">
+                        <td class="px-4 py-3">{{ failure.row_number }}</td>
+                        <td class="px-4 py-3">{{ failure.row.get('student_name', '') }}</td>
+                        <td class="px-4 py-3">{{ failure.reason }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

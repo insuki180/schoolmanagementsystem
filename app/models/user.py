@@ -21,7 +21,7 @@ class User(Base):
     name = Column(String(200), nullable=False)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    phone = Column(String(20), nullable=True)
+    phone_number = Column(String(20), nullable=True)
     role = Column(Enum(UserRole), nullable=False)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
     must_change_password = Column(Boolean, default=True)
@@ -44,3 +44,11 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"
+
+    @property
+    def phone(self):
+        return self.phone_number
+
+    @phone.setter
+    def phone(self, value):
+        self.phone_number = value

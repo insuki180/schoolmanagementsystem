@@ -4,7 +4,8 @@
 {% block content %}
 <div class="fade-in space-y-6 max-w-2xl">
     <div>
-        <h1 class="text-2xl font-bold" style="color:var(--color-text)">Respond to Absence</h1>
+        <a href="/notifications" class="text-sm font-semibold text-primary-600 hover:text-primary-800">Back to Notifications</a>
+        <h1 class="text-2xl font-bold mt-2" style="color:var(--color-text)">Respond to Absence</h1>
         <p class="text-sm mt-1" style="color:var(--color-text-muted)">
             {{ student.name }} was marked absent on {{ absence_date.strftime('%b %d, %Y') }}.
         </p>

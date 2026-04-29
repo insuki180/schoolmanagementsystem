@@ -93,6 +93,36 @@ async def list_notifications(request: Request, db: DBSession,
     })
 
 
+@router.get("/view/{notification_id}", response_class=HTMLResponse)
+async def notification_detail(
+    request: Request,
+    notification_id: int,
+    db: DBSession,
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(select(Notification).where(Notification.id == notification_id))
+    notification = result.scalar_one_or_none()
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found.")
+
+    role = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+    if role == "parent":
+        allowed_ids = {item.id for item in await get_notifications_for_parent(db, current_user.id, current_user.school_id)}
+        if notification.id not in allowed_ids:
+            raise HTTPException(status_code=403, detail="You do not have access to this notification.")
+    elif role != "super_admin" and notification.school_id != current_user.school_id:
+        raise HTTPException(status_code=403, detail="You do not have access to this notification.")
+
+    return templates.TemplateResponse(
+        "notifications/detail.html",
+        {
+            "request": request,
+            "user": current_user,
+            "notification": notification,
+        },
+    )
+
+
 @router.get("/absence/{student_id}/{absence_date}", response_class=HTMLResponse)
 async def absence_response_page(
     request: Request,

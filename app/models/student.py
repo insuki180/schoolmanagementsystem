@@ -1,6 +1,6 @@
 """Student model — linked to a class and a parent user."""
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -14,6 +14,8 @@ class Student(Base):
     class_id = Column(Integer, ForeignKey("classes.id"), nullable=False, index=True)
     parent_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=False)
+    blood_group = Column(String(20), nullable=True)
+    address = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Constraints
