@@ -26,7 +26,7 @@
     <div class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
         <label for="class-select" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Select Class</label>
         <div class="relative max-w-md">
-            <select id="class-select" onchange="window.location='/attendance/mark?class_id='+this.value"
+            <select id="class-select" onchange="window.location='/attendance/mark?school_id={{ active_school_id }}&class_id='+this.value"
                 class="input-field appearance-none pr-10 w-full font-medium" style="background-color:var(--color-bg)">
                 <option value="">Choose a class...</option>
                 {% for cls in classes %}
@@ -45,6 +45,7 @@
     <form method="POST" action="/attendance/mark" class="space-y-6">
         <input type="hidden" name="class_id" value="{{ selected_class }}">
         <input type="hidden" name="att_date" value="{{ today }}">
+        <input type="hidden" name="school_id" value="{{ active_school_id }}">
 
         <!-- Student List Container -->
         <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">

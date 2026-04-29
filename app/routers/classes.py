@@ -13,6 +13,7 @@ from app.models.attendance import Attendance
 from app.models.mark import Mark
 from app.models.absence_response import AbsenceResponse
 from app.services.permissions import can_view_student, get_allowed_classes, is_school_admin, is_super_admin
+from app.services.school_scope import resolve_school_scope
 
 router = APIRouter(prefix="/classes", tags=["classes"])
 templates = Jinja2Templates(directory="app/templates")
@@ -20,39 +21,49 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("", response_class=HTMLResponse)
 async def list_classes(request: Request, db: DBSession,
+    school_id: int | None = None,
     current_user: User = Depends(get_current_user)):
-    classes = await get_allowed_classes(db, current_user)
+    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
+    effective_school_id = school.id if school else None
+    classes = await get_allowed_classes(db, current_user, school_id=effective_school_id)
     role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
     return templates.TemplateResponse("classes/list.html", {
         "request": request, "user": current_user, "classes": classes,
-        "can_create": role == "school_admin", "error": None,
+        "can_create": role in {"school_admin", "super_admin"} and effective_school_id is not None,
+        "error": None,
+        "active_school_id": effective_school_id,
     })
 
 
 @router.post("")
 async def create_class(request: Request, db: DBSession,
     name: str = Form(...),
+    school_id: int | None = Form(None),
     current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
-    if current_user.school_id is None and current_user.role == UserRole.SUPER_ADMIN:
+    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
+    effective_school_id = school.id if school else current_user.school_id
+    if effective_school_id is None:
         raise HTTPException(status_code=400, detail="Super admin must create classes from a school-specific workflow.")
-    cls = Class(name=name, school_id=current_user.school_id)
+    cls = Class(name=name, school_id=effective_school_id)
     db.add(cls)
     await db.flush()
-    return RedirectResponse(url="/classes", status_code=303)
+    return RedirectResponse(url=f"/classes?school_id={effective_school_id}", status_code=303)
 
 
 @router.get("/{class_id}", response_class=HTMLResponse)
+@router.get("/{class_id}/students", response_class=HTMLResponse)
 async def class_detail(request: Request, class_id: int, db: DBSession,
+    school_id: int | None = None,
     current_user: User = Depends(get_current_user)):
     cls_result = await db.execute(select(Class).where(Class.id == class_id))
     cls = cls_result.scalar_one_or_none()
     if not cls:
         return RedirectResponse(url="/classes", status_code=303)
-    if (
-        not is_super_admin(current_user)
-        and cls.school_id != current_user.school_id
-        and current_user.role != UserRole.PARENT
-    ):
+    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=is_super_admin(current_user))
+    effective_school_id = school.id if school else None
+    if effective_school_id is not None and cls.school_id != effective_school_id:
+        raise HTTPException(status_code=403, detail="You do not have access to this class.")
+    if not is_super_admin(current_user) and cls.school_id != current_user.school_id and current_user.role != UserRole.PARENT:
         raise HTTPException(status_code=403, detail="You do not have access to this class.")
 
     # Students
@@ -109,17 +120,21 @@ async def class_detail(request: Request, class_id: int, db: DBSession,
         "subject_assignments": assignments_result.scalars().all(),
         "absence_responses": absence_responses,
         "can_manage_mapping": is_school_admin(current_user) or is_super_admin(current_user),
+        "active_school_id": cls.school_id,
     })
 
 
 @router.post("/subjects")
 async def create_subject(request: Request, db: DBSession,
     name: str = Form(...),
+    school_id: int | None = Form(None),
     current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
-    subject = Subject(name=name, school_id=current_user.school_id)
+    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
+    effective_school_id = school.id if school else current_user.school_id
+    subject = Subject(name=name, school_id=effective_school_id)
     db.add(subject)
     await db.flush()
-    return RedirectResponse(url="/classes", status_code=303)
+    return RedirectResponse(url=f"/classes?school_id={effective_school_id}", status_code=303)
 
 
 @router.post("/{class_id}/assign-teacher")

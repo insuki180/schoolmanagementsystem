@@ -36,5 +36,6 @@ async def student_details(
             "user": current_user,
             **context,
             "success": request.query_params.get("success"),
+            "active_school_id": context["student"].school_id,
         },
     )

@@ -23,6 +23,7 @@ from app.services.absence_response_service import (
     save_absence_response,
 )
 from app.services.permissions import can_view_student, is_parent
+from app.services.school_scope import resolve_school_scope
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 templates = Jinja2Templates(directory="app/templates")
@@ -76,17 +77,26 @@ async def send_personal(
     student_id: int = Form(...),
     title: str = Form(...),
     message: str = Form(...),
+    school_id: int | None = Form(None),
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
     if not await can_view_student(current_user, db, student_id):
         raise HTTPException(status_code=403, detail="You do not have access to this student.")
+
+    school = await resolve_school_scope(
+        db,
+        current_user,
+        school_id,
+        required_for_super_admin=current_user.role == UserRole.SUPER_ADMIN,
+    )
+    effective_school_id = school.id if school else current_user.school_id
 
     try:
         await send_personal_notification(
             db,
             title=title,
             message=message,
-            school_id=current_user.school_id,
+            school_id=effective_school_id,
             sent_by=current_user.id,
             student_id=student_id,
         )
@@ -94,13 +104,14 @@ async def send_personal(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     return RedirectResponse(
-        url=f"/students/{student_id}/details?success=Notification+sent+successfully",
+        url=f"/students/{student_id}/details?school_id={effective_school_id}&success=Notification+sent+successfully",
         status_code=303,
     )
 
 
 @router.get("", response_class=HTMLResponse)
 async def list_notifications(request: Request, db: DBSession,
+    school_id: int | None = None,
     current_user: User = Depends(get_current_user)):
     role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
     if role == "parent":
@@ -108,10 +119,16 @@ async def list_notifications(request: Request, db: DBSession,
         absence_alerts = await get_parent_absence_alerts(db, current_user)
         absence_responses = []
     elif role == "super_admin":
-        result = await db.execute(select(Notification).order_by(Notification.created_at.desc()).limit(50))
+        school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
+        result = await db.execute(
+            select(Notification)
+            .where(Notification.school_id == school.id)
+            .order_by(Notification.created_at.desc())
+            .limit(50)
+        )
         notifications = list(result.scalars().all())
         absence_alerts = []
-        absence_responses = await get_visible_absence_responses(db, current_user)
+        absence_responses = await get_visible_absence_responses(db, current_user, school_id=school.id)
     else:
         notifications = await get_notifications_for_school(db, current_user.school_id)
         absence_alerts = []
@@ -122,6 +139,7 @@ async def list_notifications(request: Request, db: DBSession,
         "notifications": notifications,
         "absence_alerts": absence_alerts,
         "absence_responses": absence_responses,
+        "active_school_id": school_id if role == "super_admin" else current_user.school_id,
     })
 
 

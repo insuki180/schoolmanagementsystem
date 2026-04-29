@@ -12,6 +12,7 @@ from app.services.attendance_service import (
     bulk_mark_attendance, get_attendance_history, get_today_attendance
 )
 from app.services.permissions import can_mark_attendance, can_view_student, get_allowed_classes
+from app.services.school_scope import resolve_school_scope
 from app.services.student_view_service import get_student_absence_history
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
@@ -20,16 +21,23 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("")
 async def attendance_index(
+    school_id: int | None = None,
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
-    return RedirectResponse(url="/attendance/mark", status_code=303)
+    target = "/attendance/mark"
+    if school_id is not None:
+        target = f"{target}?school_id={school_id}"
+    return RedirectResponse(url=target, status_code=303)
 
 
 @router.get("/mark", response_class=HTMLResponse)
 async def mark_attendance_page(request: Request, db: DBSession,
     class_id: int = None,
+    school_id: int | None = None,
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
-    classes = await get_allowed_classes(db, current_user)
+    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
+    effective_school_id = school.id if school else None
+    classes = await get_allowed_classes(db, current_user, school_id=effective_school_id)
     allowed_class_ids = {cls.id for cls in classes}
 
     students = []
@@ -45,13 +53,20 @@ async def mark_attendance_page(request: Request, db: DBSession,
         "classes": classes, "students": students,
         "selected_class": selected_class, "today": date.today().isoformat(),
         "success": None, "error": None,
+        "active_school_id": effective_school_id,
     })
 
 
 @router.post("/mark")
 async def mark_attendance(request: Request, db: DBSession,
-    class_id: int = Form(...), att_date: str = Form(...),
+    class_id: int = Form(...), att_date: str = Form(...), school_id: int | None = Form(None),
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
+    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
+    effective_school_id = school.id if school else None
+    classes = await get_allowed_classes(db, current_user, school_id=effective_school_id)
+    allowed_class_ids = {cls.id for cls in classes}
+    if class_id not in allowed_class_ids:
+        raise HTTPException(status_code=403, detail="You do not have permission to mark attendance for this class.")
     if not await can_mark_attendance(current_user, db, class_id):
         raise HTTPException(status_code=403, detail="You do not have permission to mark attendance for this class.")
 
@@ -61,7 +76,6 @@ async def mark_attendance(request: Request, db: DBSession,
     count = await bulk_mark_attendance(db, class_id, parsed_date, absent_ids, current_user.id)
 
     # Reload page with success
-    classes = await get_allowed_classes(db, current_user)
     students = await get_today_attendance(db, class_id)
 
     return templates.TemplateResponse("attendance/mark.html", {
@@ -69,6 +83,7 @@ async def mark_attendance(request: Request, db: DBSession,
         "classes": classes, "students": students,
         "selected_class": class_id, "today": att_date,
         "success": f"Attendance saved for {count} students!", "error": None,
+        "active_school_id": effective_school_id,
     })
 
 

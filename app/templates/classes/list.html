@@ -29,6 +29,7 @@
     <div class="grid lg:grid-cols-2 gap-5">
         <!-- Add Class Form -->
         <form method="POST" action="/classes" class="rounded-2xl border shadow-sm p-6 slide-up" style="background:var(--color-surface);border-color:var(--color-border)">
+            <input type="hidden" name="school_id" value="{{ active_school_id }}">
             <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
                     <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -51,6 +52,7 @@
 
         <!-- Add Subject Form -->
         <form method="POST" action="/classes/subjects" class="rounded-2xl border shadow-sm p-6 slide-up" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:0.1s">
+            <input type="hidden" name="school_id" value="{{ active_school_id }}">
             <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
                     <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -86,7 +88,7 @@
 
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {% for cls in classes %}
-            <a href="/classes/{{ cls.id }}" class="card-hover group relative rounded-2xl border p-5 flex flex-col slide-up" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:{{ loop.index0 * 0.05 }}s">
+            <a href="/classes/{{ cls.id }}/students?school_id={{ active_school_id }}" class="card-hover group relative rounded-2xl border p-5 flex flex-col slide-up" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:{{ loop.index0 * 0.05 }}s">
                 <div class="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"></div>
                 
                 <div class="flex items-center gap-4 mb-4 relative z-10">

@@ -5,6 +5,7 @@ from fastapi import Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db, AsyncSessionLocal
 from app.services.auth_service import decode_access_token
+from app.models.school import School
 from app.models.user import User, UserRole
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -46,6 +47,23 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
             status_code=status.HTTP_303_SEE_OTHER,
             headers={"Location": "/login"},
         )
+
+    request.state.user = user
+    request.state.school_options = []
+    request.state.active_school_id = None
+
+    if user.role == UserRole.SUPER_ADMIN:
+        schools_result = await db.execute(select(School).order_by(School.name))
+        request.state.school_options = list(schools_result.scalars().all())
+        school_id = request.query_params.get("school_id")
+        if school_id and school_id.isdigit():
+            request.state.active_school_id = int(school_id)
+    elif user.school_id:
+        school_result = await db.execute(select(School).where(School.id == user.school_id))
+        school = school_result.scalar_one_or_none()
+        if school:
+            request.state.school_options = [school]
+            request.state.active_school_id = school.id
 
     return user
 

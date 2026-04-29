@@ -20,6 +20,7 @@ from app.services.permissions import (
     is_school_admin,
     is_super_admin,
 )
+from app.services.school_scope import resolve_school_scope
 
 router = APIRouter(prefix="/marks", tags=["marks"])
 templates = Jinja2Templates(directory="app/templates")
@@ -27,16 +28,22 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("")
 async def marks_index(
+    school_id: int | None = None,
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
-    return RedirectResponse(url="/marks/entry", status_code=303)
+    target = "/marks/entry"
+    if school_id is not None:
+        target = f"{target}?school_id={school_id}"
+    return RedirectResponse(url=target, status_code=303)
 
 
 @router.get("/entry", response_class=HTMLResponse)
 async def marks_entry_page(request: Request, db: DBSession,
-    class_id: int = None, subject_id: int = None, exam_id: int = None,
+    class_id: int = None, subject_id: int = None, exam_id: int = None, school_id: int | None = None,
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
-    classes = await get_allowed_classes(db, current_user)
+    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
+    effective_school_id = school.id if school else None
+    classes = await get_allowed_classes(db, current_user, school_id=effective_school_id)
     allowed_class_ids = {cls.id for cls in classes}
 
     if class_id and class_id not in allowed_class_ids:
@@ -50,9 +57,11 @@ async def marks_entry_page(request: Request, db: DBSession,
         subjects = await get_allowed_subjects_for_class(db, current_user, selected_class.id)
         exams_query = select(Exam).where(Exam.school_id == selected_class.school_id).order_by(Exam.name)
     elif is_super_admin(current_user):
-        subject_result = await db.execute(select(Subject).order_by(Subject.name))
+        subject_result = await db.execute(
+            select(Subject).where(Subject.school_id == effective_school_id).order_by(Subject.name)
+        )
         subjects = list(subject_result.scalars().all())
-        exams_query = select(Exam).order_by(Exam.name)
+        exams_query = select(Exam).where(Exam.school_id == effective_school_id).order_by(Exam.name)
     elif is_school_admin(current_user):
         subject_result = await db.execute(
             select(Subject).where(Subject.school_id == current_user.school_id).order_by(Subject.name)
@@ -76,7 +85,10 @@ async def marks_entry_page(request: Request, db: DBSession,
         error = "You do not have permission to enter marks for that subject."
     elif class_id:
         result = await db.execute(
-            select(Student).where(Student.class_id == class_id).order_by(Student.name))
+            select(Student)
+            .where(Student.class_id == class_id, Student.school_id == effective_school_id)
+            .order_by(Student.name)
+        )
         students_list = result.scalars().all()
         for s in students_list:
             existing_mark = None
@@ -101,13 +113,20 @@ async def marks_entry_page(request: Request, db: DBSession,
         "selected_class": class_id, "selected_subject": subject_id,
         "selected_exam": exam_id,
         "success": None, "error": error,
+        "active_school_id": effective_school_id,
     })
 
 
 @router.post("/entry")
 async def marks_entry(request: Request, db: DBSession,
-    class_id: int = Form(...), subject_id: int = Form(...), exam_id: int = Form(...),
+    class_id: int = Form(...), subject_id: int = Form(...), exam_id: int = Form(...), school_id: int | None = Form(None),
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
+    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
+    effective_school_id = school.id if school else None
+    classes = await get_allowed_classes(db, current_user, school_id=effective_school_id)
+    allowed_class_ids = {cls.id for cls in classes}
+    if class_id not in allowed_class_ids:
+        raise HTTPException(status_code=403, detail="You do not have access to this class.")
     if not await can_edit_marks(current_user, db, class_id, subject_id):
         raise HTTPException(status_code=403, detail="You do not have permission to edit marks for this class/subject.")
 
@@ -128,7 +147,7 @@ async def marks_entry(request: Request, db: DBSession,
         count = await bulk_upsert_marks(db, subject_id, exam_id, entries, current_user.id)
 
     return RedirectResponse(
-        url=f"/marks/entry?class_id={class_id}&subject_id={subject_id}&exam_id={exam_id}",
+        url=f"/marks/entry?school_id={effective_school_id}&class_id={class_id}&subject_id={subject_id}&exam_id={exam_id}",
         status_code=303)
 
 

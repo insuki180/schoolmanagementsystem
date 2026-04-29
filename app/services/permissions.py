@@ -101,9 +101,15 @@ async def _class_has_subject_mappings(db: AsyncSession, class_id: int) -> bool:
     return ((await db.execute(query)).scalar() or 0) > 0
 
 
-async def get_allowed_classes(db: AsyncSession, user: User) -> list[Class]:
+async def get_allowed_classes(
+    db: AsyncSession,
+    user: User,
+    school_id: int | None = None,
+) -> list[Class]:
     if is_super_admin(user):
         query = select(Class).order_by(Class.name)
+        if school_id is not None:
+            query = query.where(Class.school_id == school_id)
     elif is_school_admin(user):
         query = select(Class).where(Class.school_id == user.school_id).order_by(Class.name)
     elif is_teacher(user):
@@ -128,6 +134,8 @@ async def get_allowed_classes(db: AsyncSession, user: User) -> list[Class]:
             )
             .order_by(Class.name)
         )
+        if school_id is not None:
+            query = query.where(Class.school_id == school_id)
     else:
         return []
 

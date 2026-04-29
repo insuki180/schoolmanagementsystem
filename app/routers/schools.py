@@ -233,3 +233,31 @@ async def school_detail(
         },
         "class_breakdown": class_breakdown,
     })
+
+
+@router.get("/{school_id}/classes", response_class=HTMLResponse)
+async def school_classes(
+    school_id: int,
+    request: Request,
+    db: DBSession,
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN):
+        raise HTTPException(status_code=403, detail="You don't have permission to access this resource.")
+
+    await _get_school_or_403(db, current_user, school_id)
+    class_result = await db.execute(
+        select(Class).where(Class.school_id == school_id).order_by(Class.name)
+    )
+    classes = list(class_result.scalars().all())
+    return templates.TemplateResponse(
+        "classes/list.html",
+        {
+            "request": request,
+            "user": current_user,
+            "classes": classes,
+            "can_create": current_user.role in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN),
+            "error": None,
+            "active_school_id": school_id,
+        },
+    )

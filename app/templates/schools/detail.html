@@ -67,7 +67,9 @@
         <tbody class="divide-y" style="border-color:var(--color-border-light)">
           {% for item in class_breakdown %}
           <tr>
-            <td class="px-6 py-4 text-sm font-semibold" style="color:var(--color-text)">{{ item.class.name }}</td>
+            <td class="px-6 py-4 text-sm font-semibold" style="color:var(--color-text)">
+              <a href="/classes/{{ item.class.id }}/students?school_id={{ school.id }}" class="text-primary-600 hover:text-primary-800">{{ item.class.name }}</a>
+            </td>
             <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ item.student_count }}</td>
             <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ "%.1f"|format(item.average_marks) }}</td>
             <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ "%.1f"|format(item.attendance_pct) }}%</td>

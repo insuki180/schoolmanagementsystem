@@ -86,6 +86,7 @@
     {% if students %}
     <!-- Marks Entry Form -->
     <form method="POST" action="/marks/entry" class="space-y-6">
+        <input type="hidden" name="school_id" value="{{ active_school_id }}">
         <input type="hidden" name="class_id" value="{{ selected_class }}">
         <input type="hidden" name="subject_id" value="{{ selected_subject }}">
         <input type="hidden" name="exam_id" value="{{ selected_exam }}">
@@ -177,7 +178,7 @@ function loadStudents() {
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                          </svg> Loading...`;
                          
-        window.location = `/marks/entry?class_id=${c}&subject_id=${s}&exam_id=${e}`;
+        window.location = `/marks/entry?school_id={{ active_school_id }}&class_id=${c}&subject_id=${s}&exam_id=${e}`;
     } else {
         // Use custom toast if available, otherwise alert
         if (window.showToast) {

@@ -5,7 +5,7 @@
 <div class="fade-in space-y-6">
     <div class="student-detail-hero">
         <div>
-        <a href="javascript:history.back()" class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 mb-3">
+        <a href="/classes/{{ student.class_id }}/students?school_id={{ active_school_id }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 mb-3">
             Back
         </a>
         <h1 class="text-2xl font-bold" style="color:var(--color-text)">{{ student.name }}</h1>
@@ -75,7 +75,7 @@
             <section class="detail-card">
                 <div class="flex items-center justify-between gap-3 mb-4">
                     <h2 class="detail-card-title !mb-0">Attendance Section</h2>
-                    <a href="/attendance/{{ student.id }}/history" class="btn-secondary">View Past Leaves</a>
+                    <a href="/attendance/{{ student.id }}/history?school_id={{ active_school_id }}" class="btn-secondary">View Past Leaves</a>
                 </div>
                 <p class="text-sm" style="color:var(--color-text-muted)">Review absent days, parent leave reasons, and duration history for this student.</p>
             </section>
@@ -86,6 +86,7 @@
                 <h2 class="detail-card-title">Actions</h2>
                 <form method="POST" action="/notifications/personal" class="space-y-4" data-loading data-loading-text="Sending...">
                     <input type="hidden" name="student_id" value="{{ student.id }}">
+                    <input type="hidden" name="school_id" value="{{ active_school_id }}">
                     <div>
                         <label class="block text-sm font-medium mb-1" style="color:var(--color-text)">Title</label>
                         <input type="text" name="title" class="input-field" placeholder="Personal notification title" required>

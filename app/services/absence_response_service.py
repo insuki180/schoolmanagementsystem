@@ -97,7 +97,11 @@ async def get_parent_absence_alerts(db: AsyncSession, parent_user: User) -> list
     return alerts
 
 
-async def get_visible_absence_responses(db: AsyncSession, viewer: User) -> list[dict]:
+async def get_visible_absence_responses(
+    db: AsyncSession,
+    viewer: User,
+    school_id: int | None = None,
+) -> list[dict]:
     """Return responses visible to admins and teachers."""
     query = (
         select(AbsenceResponse, Student, Class, User)
@@ -108,7 +112,8 @@ async def get_visible_absence_responses(db: AsyncSession, viewer: User) -> list[
     )
 
     if is_super_admin(viewer):
-        pass
+        if school_id is not None:
+            query = query.where(Student.school_id == school_id)
     elif is_school_admin(viewer):
         query = query.where(Student.school_id == viewer.school_id)
     elif is_teacher(viewer):
