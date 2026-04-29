@@ -219,6 +219,41 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 .sidebar-icon { width: 20px; height: 20px; flex-shrink: 0; stroke-width: 1.75; }
 .nav-icon { width: 22px; height: 22px; flex-shrink: 0; }
 
+/* --- App Sidebar Layout --- */
+#sidebar {
+  background: var(--sidebar-bg);
+}
+
+@media (max-width: 767px) {
+  #sidebar {
+    top: 4.5rem;
+    transform: translateX(-100%);
+  }
+
+  #sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  #sidebar-toggle {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) {
+  #sidebar {
+    top: 0;
+    transform: translateX(0);
+  }
+
+  #app-main {
+    margin-left: 16rem;
+  }
+
+  #sidebar-toggle {
+    display: none;
+  }
+}
+
 /* --- Dark mode toggle button --- */
 .theme-toggle {
   position: relative; width: 44px; height: 24px; border-radius: 12px; cursor: pointer;

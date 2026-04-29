@@ -9,199 +9,51 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/output.css" />
-  <link rel="stylesheet" href="/static/css/custom.css" />
+  <link rel="stylesheet" href="/static/css/output.css?v=sidebar-fix-20260429b" />
+  <link rel="stylesheet" href="/static/css/custom.css?v=sidebar-fix-20260429b" />
   {% block extra_head %}{% endblock %}
 </head>
-
 <body class="min-h-screen font-sans antialiased" style="background:var(--color-bg);color:var(--color-text)">
-
-<!-- Toast Container -->
 <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 {% if request.state.user is defined and request.state.user or (request.cookies.get('access_token')) %}
 {% set user = user if user is defined else None %}
 {% set role = user.role.value if user and user.role else None %}
 
-<!-- ═══════ MOBILE DRAWER OVERLAY ═══════ -->
-<div id="drawer-overlay" class="drawer-overlay" role="presentation">
-  <nav id="mobile-drawer" class="drawer-panel h-full overflow-y-auto"
-       style="background:linear-gradient(180deg,#312e81 0%,#1e1b4b 100%)"
-       aria-label="Mobile Navigation">
+<div id="app-shell" class="flex">
 
-    <div class="flex items-center justify-between p-4 border-b border-white/10">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-xl overflow-hidden bg-white/20 flex items-center justify-center">
-          {% if user and user.school and user.school.logo_url %}
-          <img src="{{ user.school.logo_url }}" alt="{{ user.school.name }} logo" class="w-full h-full object-cover">
-          {% else %}
-          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
-          </svg>
-          {% endif %}
-        </div>
-        <span class="font-bold text-white text-sm">SchoolMS</span>
-      </div>
-      <button id="drawer-close" type="button" onclick="toggleSidebar(false)" class="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all" aria-label="Close navigation">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+  <!-- Sidebar -->
+  <div id="sidebar"
+       class="fixed z-40 inset-y-0 left-0 w-64 text-white transition-transform duration-200 ease-in-out">
+
+    <div class="p-4 font-bold text-lg">
+      School App
     </div>
 
-    <div class="p-3">
-      {% if user %}
-      <div class="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl" style="background:rgba(255,255,255,0.08)">
-        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-violet-500 flex items-center justify-center flex-shrink-0">
-          <span class="text-white font-bold text-sm">{{ (user.name or user.email)[0]|upper }}</span>
-        </div>
-        <div class="min-w-0">
-          <p class="text-white font-medium text-sm truncate">{{ user.name or user.email }}</p>
-          <p class="text-white/50 text-xs truncate">{{ user.role.value|title if user.role else '' }}</p>
-        </div>
-      </div>
-      {% endif %}
-      {% include 'partials/nav_links.html' ignore missing %}
-    </div>
-  </nav>
-</div>
+    {% include "partials/nav_links.html" %}
+  </div>
 
-<!-- ═══════ DESKTOP LAYOUT ═══════ -->
-<div class="flex min-h-screen">
-
-  <!-- Desktop Sidebar -->
-  <aside class="hidden lg:flex flex-col w-64 flex-shrink-0 fixed inset-y-0 left-0 z-40"
-         style="background:linear-gradient(180deg,#312e81 0%,#1e1b4b 100%)" aria-label="Sidebar Navigation">
-
-    <!-- Logo -->
-    <div class="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-      <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
-        </svg>
-      </div>
-      <div>
-        <span class="font-bold text-white text-base tracking-tight">SchoolMS</span>
-        <p class="text-white/40 text-xs">{{ user.school.name if user and user.school else 'Management System' }}</p>
-      </div>
-    </div>
-
-    <!-- User Info -->
-    {% if user %}
-    <div class="px-4 py-3 mx-3 mt-3 rounded-xl" style="background:rgba(255,255,255,0.08)">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-violet-500 flex items-center justify-center flex-shrink-0">
-          <span class="text-white font-bold text-sm">{{ (user.name or user.email)[0]|upper }}</span>
-        </div>
-        <div class="min-w-0 flex-1">
-          <p class="text-white font-medium text-sm truncate">{{ user.name or user.email }}</p>
-          <p class="text-white/50 text-xs">{{ user.role.value|title if user.role else '' }}</p>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Nav Links -->
-    <nav class="flex-1 overflow-y-auto no-scrollbar px-3 py-3 space-y-0.5">
-      {% include 'partials/nav_links.html' %}
-    </nav>
-
-    <!-- Bottom actions -->
-    <div class="border-t border-white/10 p-3 space-y-1">
-      <button onclick="ThemeManager.toggle()" data-theme-toggle aria-label="Toggle dark mode"
-              class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                     text-white/70 hover:text-white hover:bg-white/10 transition-all">
-        <span data-theme-icon class="sidebar-icon flex items-center justify-center">
-          <svg fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-5 h-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
-          </svg>
-        </span>
-        Dark Mode
-      </button>
-      <a href="/logout" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                               text-white/70 hover:text-white hover:bg-red-500/20 transition-all">
-        <svg class="sidebar-icon" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
-        </svg>
-        Sign Out
-      </a>
-    </div>
-  </aside>
-
-  <!-- Main Content Area -->
-  <div class="flex-1 flex flex-col lg:pl-64 min-w-0">
+  <!-- Main Content -->
+  <div id="app-main" class="flex-1 min-h-screen">
 
     <!-- Top Bar -->
-    <header class="sticky top-0 z-30 border-b" style="background:var(--color-surface);border-color:var(--color-border)">
-      <div class="flex items-center gap-3 px-4 sm:px-6 h-14">
+    <div class="relative z-50 p-4 bg-white shadow flex justify-between items-center" style="background:var(--color-surface)">
 
-        <!-- Mobile hamburger -->
-        <button id="drawer-trigger" type="button" onclick="toggleSidebar()" class="lg:hidden p-2 -ml-1 rounded-lg transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
-                aria-label="Open navigation" aria-expanded="false">
-          <svg class="w-5 h-5" style="color:var(--color-text-secondary)" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/>
-          </svg>
-        </button>
+      <!-- Mobile Toggle Button -->
+      <button id="sidebar-toggle" type="button" onclick="toggleSidebar()" class="text-2xl leading-none" aria-label="Toggle sidebar">
+        ☰
+      </button>
 
-        <!-- Page title area -->
-        <div class="flex-1 min-w-0">
-          <h1 class="text-sm font-semibold truncate" style="color:var(--color-text)">{% block page_title %}{% endblock %}</h1>
-          {% block breadcrumb %}{% endblock %}
-        </div>
-
-        <!-- Right Actions -->
-        <div class="flex items-center gap-2">
-          {% if user and user.school %}
-          <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg"
-               style="background:var(--color-bg)">
-            <div class="w-8 h-8 rounded-lg overflow-hidden bg-white/20 flex items-center justify-center">
-              {% if user.school.logo_url %}
-              <img src="{{ user.school.logo_url }}" alt="{{ user.school.name }} logo" class="w-full h-full object-cover">
-              {% else %}
-              <svg class="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
-              </svg>
-              {% endif %}
-            </div>
-            <div class="min-w-0">
-              <p class="text-xs font-semibold truncate" style="color:var(--color-text)">{{ user.school.name }}</p>
-              <p class="text-[11px]" style="color:var(--color-text-muted)">School Profile</p>
-            </div>
-          </div>
-          {% endif %}
-          {% if user %}
-          <a href="/logout"
-             class="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all
-                    hover:bg-red-50 dark:hover:bg-red-900/20"
-             style="color:var(--color-text-secondary)">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
-            </svg>
-            Logout
-          </a>
-          {% endif %}
-          <!-- Dark Mode (desktop inline) -->
-          <button onclick="ThemeManager.toggle()" data-theme-toggle aria-label="Toggle dark mode"
-                  class="hidden sm:flex p-2 rounded-lg transition-all hover:bg-slate-100 dark:hover:bg-slate-800">
-            <span data-theme-icon style="color:var(--color-text-secondary);width:18px;height:18px;display:flex;align-items:center;justify-content:center">
-              <svg fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" class="w-[18px] h-[18px]">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
-              </svg>
-            </span>
-          </button>
-
-          {% if user %}
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-violet-500 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-            <span class="text-white font-bold text-xs">{{ (user.name or user.email)[0]|upper }}</span>
-          </div>
-          {% endif %}
-        </div>
+      <div class="flex-1 min-w-0 px-4 md:px-0">
+        <h1 class="text-sm font-semibold truncate" style="color:var(--color-text)">{% block page_title %}{% endblock %}</h1>
+        {% block breadcrumb %}{% endblock %}
       </div>
-    </header>
 
-    <!-- Flash messages -->
+      <a href="/logout" class="text-red-500 font-semibold">Logout</a>
+    </div>
+
     {% if request.query_params.get('msg') %}
-    <div class="mx-4 sm:mx-6 mt-4 px-4 py-3 rounded-xl border text-sm font-medium
+    <div class="mx-4 mt-4 px-4 py-3 rounded-xl border text-sm font-medium
                 bg-emerald-50 border-emerald-200 text-emerald-800
                 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300 fade-in"
          data-auto-dismiss="6000" role="alert">
@@ -209,26 +61,30 @@
     </div>
     {% endif %}
 
-    <!-- Page content -->
-    <main class="flex-1 p-4 sm:p-6 fade-in" role="main">
-      {{ self.content() }}
-    </main>
+    <div class="p-4">
+{% else %}
+<main class="min-h-screen flex items-center justify-center p-4" role="main">
+{% endif %}
+      {% block content %}{% endblock %}
+{% if request.state.user is defined and request.state.user or (request.cookies.get('access_token')) %}
+    </div>
 
-    <footer class="px-6 py-4 text-xs text-center border-t" style="color:var(--color-text-muted);border-color:var(--color-border)">
-      © 2025 SchoolMS — All rights reserved
-    </footer>
   </div>
 </div>
-
 {% else %}
-<!-- ═══════ UNAUTHENTICATED LAYOUT ═══════ -->
-<main class="min-h-screen flex items-center justify-center p-4" role="main">
-  {% block content %}{% endblock %}
 </main>
 {% endif %}
 
-<script src="/static/js/app.js" defer></script>
+<script src="/static/js/app.js?v=sidebar-fix-20260429b" defer></script>
 {% block extra_scripts %}{% endblock %}
 {% block scripts %}{% endblock %}
+<script>
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar || window.innerWidth >= 768) return;
+
+  sidebar.classList.toggle("is-open");
+}
+</script>
 </body>
 </html>
