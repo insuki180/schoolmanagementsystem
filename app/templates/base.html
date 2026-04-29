@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}SchoolMS{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}School Management System — manage students, attendance, marks and more.{% endblock %}">
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="shortcut icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/output.css?v=sidebar-fix-20260429b" />
-  <link rel="stylesheet" href="/static/css/custom.css?v=sidebar-fix-20260429b" />
+  <link rel="stylesheet" href="/static/css/output.css?v=ui-refresh-20260429a" />
+  <link rel="stylesheet" href="/static/css/custom.css?v=ui-refresh-20260429a" />
   {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen font-sans antialiased" style="background:var(--color-bg);color:var(--color-text)">
@@ -26,8 +27,12 @@
   <div id="sidebar"
        class="fixed z-40 inset-y-0 left-0 w-64 text-white transition-transform duration-200 ease-in-out">
 
-    <div class="p-4 font-bold text-lg">
-      School App
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-mark">S</div>
+      <div>
+        <p class="sidebar-brand-title">School App</p>
+        <p class="sidebar-brand-subtitle">Academic Control Center</p>
+      </div>
     </div>
 
     {% include "partials/nav_links.html" %}
@@ -37,31 +42,48 @@
   <div id="app-main" class="flex-1 min-h-screen">
 
     <!-- Top Bar -->
-    <div class="relative z-50 p-4 bg-white shadow flex justify-between items-center" style="background:var(--color-surface)">
+    <div class="app-header relative z-50" style="background:var(--color-surface)">
 
-      <!-- Mobile Toggle Button -->
-      <button id="sidebar-toggle" type="button" onclick="toggleSidebar()" class="text-2xl leading-none" aria-label="Toggle sidebar">
-        ☰
-      </button>
+      <div class="app-header-main">
+        <div class="app-header-left">
+          <button id="sidebar-toggle" type="button" onclick="toggleSidebar()" class="sidebar-toggle-btn" aria-label="Toggle sidebar">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
 
-      <div class="flex-1 min-w-0 px-4 md:px-0">
-        <h1 class="text-sm font-semibold truncate" style="color:var(--color-text)">{% block page_title %}{% endblock %}</h1>
-        {% block breadcrumb %}{% endblock %}
+          <div class="app-header-copy">
+            <p class="app-header-kicker">School Management System</p>
+            <h1 class="app-header-title">{% block page_title %}{% endblock %}</h1>
+            {% block breadcrumb %}{% endblock %}
+          </div>
+        </div>
+
+        <div class="app-header-actions">
+          {% if user %}
+          <div class="app-user-chip">
+            <div class="app-user-avatar">{{ user.name[0]|upper if user.name else "U" }}</div>
+            <div class="app-user-meta">
+              <p class="app-user-name">{{ user.name }}</p>
+              <p class="app-user-role">{{ role|replace('_', ' ')|title if role else "User" }}</p>
+            </div>
+          </div>
+          {% endif %}
+
+          <a href="/logout" class="btn-ghost-danger">Logout</a>
+        </div>
       </div>
-
-      <a href="/logout" class="text-red-500 font-semibold">Logout</a>
     </div>
 
     {% if request.query_params.get('msg') %}
-    <div class="mx-4 mt-4 px-4 py-3 rounded-xl border text-sm font-medium
-                bg-emerald-50 border-emerald-200 text-emerald-800
-                dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300 fade-in"
+    <div class="mx-4 mt-4 success-banner fade-in"
          data-auto-dismiss="6000" role="alert">
-      ✓ {{ request.query_params.get('msg') }}
+      <span class="success-banner-icon">✓</span>
+      <span>{{ request.query_params.get('msg') }}</span>
     </div>
     {% endif %}
 
-    <div class="p-4">
+    <div class="app-content p-4 md:p-6">
 {% else %}
 <main class="min-h-screen flex items-center justify-center p-4" role="main">
 {% endif %}
@@ -75,7 +97,7 @@
 </main>
 {% endif %}
 
-<script src="/static/js/app.js?v=sidebar-fix-20260429b" defer></script>
+<script src="/static/js/app.js?v=ui-refresh-20260429a" defer></script>
 {% block extra_scripts %}{% endblock %}
 {% block scripts %}{% endblock %}
 <script>

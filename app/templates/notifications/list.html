@@ -23,22 +23,26 @@
     </div>
 
     {% if absence_alerts %}
-    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="rounded-3xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
         <div class="px-6 py-4 border-b" style="border-color:var(--color-border);background:var(--color-bg)">
             <h2 class="font-semibold text-base" style="color:var(--color-text)">Absence Notifications</h2>
         </div>
-        <div class="divide-y" style="border-color:var(--color-border-light)">
+        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
             {% for alert in absence_alerts %}
-            <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
+            <div class="notification-card notification-card-alert">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="notification-card-badge">Absence</span>
+                    <span class="notification-card-date">{{ alert.date.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div class="space-y-2">
                     <p class="font-semibold text-sm" style="color:var(--color-text)">{{ alert.student.name }} • {{ alert.class_name }}</p>
-                    <p class="text-xs mt-1" style="color:var(--color-text-muted)">Absent on {{ alert.date.strftime('%b %d, %Y') }}</p>
+                    <p class="text-sm" style="color:var(--color-text-secondary)">Absent notification requiring parent context and follow-up.</p>
                     {% if alert.response %}
-                    <p class="text-sm mt-2" style="color:var(--color-text-secondary)">{{ alert.response.message }}</p>
+                    <p class="text-sm mt-2 line-clamp-3" style="color:var(--color-text-secondary)">{{ alert.response.message }}</p>
                     {% endif %}
                 </div>
                 <a href="/notifications/absence/{{ alert.student.id }}/{{ alert.date.isoformat() }}"
-                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors">
+                   class="btn-secondary inline-flex items-center justify-center gap-2">
                     {% if alert.response %}Update Response{% else %}Respond{% endif %}
                 </a>
             </div>
@@ -48,14 +52,13 @@
     {% endif %}
 
     <!-- Notifications List -->
-    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="rounded-3xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
         {% if notifications %}
-        <div class="divide-y" style="border-color:var(--color-border-light)">
+        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
             {% for notif in notifications %}
-            <div class="px-6 py-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors slide-up" style="animation-delay:{{ loop.index0 * 0.03 }}s">
+            <div class="notification-card slide-up" style="animation-delay:{{ loop.index0 * 0.03 }}s">
                 <div class="flex items-start gap-4">
-                    <!-- Icon based on type -->
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5
                         {% if notif.is_school_wide %}bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400
                         {% else %}bg-primary-50 text-primary-500 dark:bg-primary-900/20 dark:text-primary-400{% endif %}">
                         {% if notif.is_school_wide %}
@@ -70,18 +73,23 @@
                     </div>
 
                     <div class="flex-1 min-w-0">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+                        <div class="flex flex-col gap-2 mb-2">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h3 class="font-bold text-base leading-tight" style="color:var(--color-text)">{{ notif.title }}</h3>
                                 {% if notif.is_school_wide %}
-                                <span class="badge badge-info px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">School-wide</span>
+                                <span class="notification-card-badge">School-wide</span>
+                                {% elif notif.target_student_id %}
+                                <span class="notification-card-badge">Personal</span>
                                 {% endif %}
                             </div>
-                            <span class="text-xs font-medium whitespace-nowrap" style="color:var(--color-text-muted)">
+                            <span class="notification-card-date">
                                 {{ notif.created_at.strftime('%b %d, %Y • %I:%M %p') if notif.created_at else '' }}
                             </span>
                         </div>
-                        <p class="text-sm leading-relaxed" style="color:var(--color-text-secondary)">{{ notif.message }}</p>
+                        <p class="text-sm leading-relaxed line-clamp-4" style="color:var(--color-text-secondary)">{{ notif.message }}</p>
+                        <div class="mt-4">
+                            <a href="/notifications/view/{{ notif.id }}" class="btn-ghost inline-flex items-center gap-2">View Notification</a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -102,13 +110,13 @@
     </div>
 
     {% if absence_responses %}
-    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="rounded-3xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
         <div class="px-6 py-4 border-b" style="border-color:var(--color-border);background:var(--color-bg)">
             <h2 class="font-semibold text-base" style="color:var(--color-text)">Parent Absence Responses</h2>
         </div>
-        <div class="divide-y" style="border-color:var(--color-border-light)">
+        <div class="grid gap-4 p-5 md:grid-cols-2">
             {% for item in absence_responses %}
-            <div class="px-6 py-4">
+            <div class="notification-card">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                         <p class="font-semibold text-sm" style="color:var(--color-text)">{{ item.student.name }} • {{ item.class_name }}</p>
@@ -118,7 +126,7 @@
                         </p>
                     </div>
                 </div>
-                <p class="text-sm mt-2" style="color:var(--color-text-secondary)">{{ item.response.message }}</p>
+                <p class="text-sm mt-3 line-clamp-4" style="color:var(--color-text-secondary)">{{ item.response.message }}</p>
             </div>
             {% endfor %}
         </div>
