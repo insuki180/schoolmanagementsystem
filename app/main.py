@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import logging
 from sqlalchemy import text
 from app.database import engine, Base
-from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports, students
+from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports, students, logs
 
 
 # Configure basic logging
@@ -134,6 +134,27 @@ async def ensure_temp_password_schema(engine):
         logger.warning("Could not verify temporary password schema: %s", exc)
 
 
+async def ensure_audit_log_schema(engine):
+    """Keep audit log storage compatible on existing deployments."""
+    statements = [
+        "CREATE TABLE IF NOT EXISTS audit_logs ("
+        "id SERIAL PRIMARY KEY, "
+        "action VARCHAR(50) NOT NULL, "
+        "performed_by INTEGER NOT NULL, "
+        "target_user INTEGER NULL, "
+        "school_id INTEGER NULL, "
+        "class_id INTEGER NULL, "
+        "role VARCHAR(20) NULL, "
+        "timestamp TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+    ]
+    try:
+        async with engine.begin() as conn:
+            for statement in statements:
+                await conn.execute(text(statement))
+    except Exception as exc:
+        logger.warning("Could not verify audit log schema: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -143,6 +164,7 @@ async def lifespan(app: FastAPI):
     await ensure_parent_contact_schema(engine)
     await ensure_notification_student_target_schema(engine)
     await ensure_temp_password_schema(engine)
+    await ensure_audit_log_schema(engine)
     yield
     # Shutdown
     await engine.dispose()
@@ -176,6 +198,7 @@ app.include_router(marks.router)
 app.include_router(classes.router)
 app.include_router(student_imports.router)
 app.include_router(students.router)
+app.include_router(logs.router)
 
 
 @app.exception_handler(Exception)

@@ -11,6 +11,7 @@ from app.models.class_ import Class
 from app.models.student import Student
 from app.schemas.auth import ResetPasswordRequest
 from app.schemas.user import StudentUpdateRequest, TeacherUpdateRequest
+from app.services.audit_service import create_log
 from app.services.user_service import (
     create_school_admin,
     create_teacher,
@@ -133,11 +134,22 @@ async def super_admin_reset_password(
     db: DBSession,
     current_user: User = Depends(require_role(UserRole.SUPER_ADMIN)),
 ):
+    target_user_id = _parse_user_id(payload.userId)
     temp_password = await reset_user_password(
         db,
         acting_user=current_user,
-        target_user_id=_parse_user_id(payload.userId),
+        target_user_id=target_user_id,
     )
+    target_user = await get_user_by_id(db, target_user_id)
+    if target_user:
+        await create_log(
+            db=db,
+            action="PASSWORD_RESET",
+            performed_by=current_user.id,
+            target_user=target_user.id,
+            school_id=target_user.school_id,
+            role=target_user.role.value if hasattr(target_user.role, "value") else str(target_user.role),
+        )
     return JSONResponse({"tempPassword": temp_password})
 
 
@@ -147,11 +159,22 @@ async def school_admin_reset_password(
     db: DBSession,
     current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN)),
 ):
+    target_user_id = _parse_user_id(payload.userId)
     temp_password = await reset_user_password(
         db,
         acting_user=current_user,
-        target_user_id=_parse_user_id(payload.userId),
+        target_user_id=target_user_id,
     )
+    target_user = await get_user_by_id(db, target_user_id)
+    if target_user:
+        await create_log(
+            db=db,
+            action="PASSWORD_RESET",
+            performed_by=current_user.id,
+            target_user=target_user.id,
+            school_id=target_user.school_id,
+            role=target_user.role.value if hasattr(target_user.role, "value") else str(target_user.role),
+        )
     return JSONResponse({"tempPassword": temp_password})
 
 

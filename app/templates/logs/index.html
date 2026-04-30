@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Logs — SchoolMS{% endblock %}
+{% block page_title %}Logs{% endblock %}
+{% block content %}
+<div class="fade-in space-y-6">
+  <div>
+    <p class="text-sm" style="color:var(--color-text-muted)">Review administrative audit activity. Password resets are logged now, and the page is ready for future actions.</p>
+  </div>
+
+  <div class="rounded-2xl border shadow-sm p-6 space-y-5" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="grid md:grid-cols-4 gap-4">
+      <div>
+        <label for="schoolFilter" class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">School</label>
+        <select id="schoolFilter" class="input-field w-full">
+          <option value="">All</option>
+          {% for school in schools %}
+          <option value="{{ school.id }}" {% if selected_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="classFilter" class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">Class</label>
+        <select id="classFilter" class="input-field w-full">
+          <option value="">All</option>
+          {% for class_ in classes %}
+          <option value="{{ class_.id }}" {% if selected_class_id == class_.id %}selected{% endif %}>{{ class_.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="roleFilter" class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">Role</label>
+        <select id="roleFilter" class="input-field w-full">
+          <option value="">All</option>
+          <option value="teacher" {% if selected_role == 'teacher' %}selected{% endif %}>Teacher</option>
+          <option value="parent" {% if selected_role == 'parent' %}selected{% endif %}>Parent</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <button type="button" onclick="loadLogs()" class="btn-primary w-full">Load</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="px-6 py-4 border-b" style="border-color:var(--color-border)">
+      <h2 class="font-semibold text-base" style="color:var(--color-text)">Audit Entries</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="w-full">
+        <thead>
+          <tr style="background:var(--color-bg)">
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Time</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Action</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Performed By</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Target User</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Role</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">School</th>
+          </tr>
+        </thead>
+        <tbody id="logTable" class="divide-y" style="border-color:var(--color-border-light)">
+          {% if logs %}
+            {% for log in logs %}
+            <tr>
+              <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ log.timestamp }}</td>
+              <td class="px-6 py-4 text-sm font-medium" style="color:var(--color-text)">{{ log.action }}</td>
+              <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ log.performed_by }}</td>
+              <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ log.target_user or "—" }}</td>
+              <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ log.role or "—" }}</td>
+              <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ log.school_id or "—" }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr id="emptyLogsRow">
+              <td colspan="6" class="px-6 py-10 text-center text-sm" style="color:var(--color-text-muted)">No logs found.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+async function loadLogs() {
+  const school = document.getElementById("schoolFilter").value;
+  const classId = document.getElementById("classFilter").value;
+  const role = document.getElementById("roleFilter").value;
+
+  const params = new URLSearchParams();
+  if (school) params.set("school_id", school);
+  if (classId) params.set("class_id", classId);
+  if (role) params.set("role", role);
+
+  const res = await fetch(`/logs?${params.toString()}`, {
+    headers: { "Accept": "application/json" }
+  });
+  const data = await res.json();
+
+  const table = document.getElementById("logTable");
+  table.innerHTML = "";
+
+  if (!Array.isArray(data) || data.length === 0) {
+    table.innerHTML = `
+      <tr id="emptyLogsRow">
+        <td colspan="6" class="px-6 py-10 text-center text-sm" style="color:var(--color-text-muted)">No logs found.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  data.forEach(log => {
+    const row = `
+      <tr>
+        <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">${log.timestamp ?? "—"}</td>
+        <td class="px-6 py-4 text-sm font-medium" style="color:var(--color-text)">${log.action ?? "—"}</td>
+        <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">${log.performed_by ?? "—"}</td>
+        <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">${log.target_user ?? "—"}</td>
+        <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">${log.role ?? "—"}</td>
+        <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">${log.school_id ?? "—"}</td>
+      </tr>
+    `;
+    table.innerHTML += row;
+  });
+}
+</script>
+{% endblock %}

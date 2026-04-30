@@ -10,6 +10,7 @@ from app.models.attendance import Attendance
 from app.models.notification import Notification, notification_classes
 from app.models.mark import Mark
 from app.models.absence_response import AbsenceResponse
+from app.models.audit_log import AuditLog
 
 __all__ = [
     "School",
@@ -25,4 +26,5 @@ __all__ = [
     "notification_classes",
     "Mark",
     "AbsenceResponse",
+    "AuditLog",
 ]
