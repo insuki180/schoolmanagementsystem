@@ -29,10 +29,25 @@
             <input type="file" name="csv_file" accept=".csv" required class="input-field w-full">
             <button type="submit" class="btn-primary w-full justify-center">Upload CSV</button>
         </form>
-        <a href="/export/students" class="rounded-2xl border shadow-sm p-5 transition-colors hover:bg-slate-50/50" style="background:var(--color-surface);border-color:var(--color-border)">
-            <p class="font-semibold" style="color:var(--color-text)">Download Student Data</p>
-            <p class="text-sm mt-2" style="color:var(--color-text-muted)">Export current student and parent records as CSV.</p>
-        </a>
+        <form method="GET" action="/export/students" class="rounded-2xl border shadow-sm p-5 space-y-4" style="background:var(--color-surface);border-color:var(--color-border)">
+            <div>
+                <p class="font-semibold" style="color:var(--color-text)">Download Student Data</p>
+                <p class="text-sm mt-2" style="color:var(--color-text-muted)">Export only the selected school and class as CSV.</p>
+            </div>
+            <select id="export-school" name="school_id" class="input-field w-full" {% if schools|length != 1 %}required{% endif %}>
+                <option value="">Select school</option>
+                {% for school in schools %}
+                <option value="{{ school.id }}" {% if schools|length == 1 %}selected{% endif %}>{{ school.name }}</option>
+                {% endfor %}
+            </select>
+            <select id="export-class" name="class_id" class="input-field w-full" required>
+                <option value="">Select class</option>
+                {% for cls in classes %}
+                <option value="{{ cls.id }}" data-school-id="{{ cls.school_id }}">{{ cls.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn-primary w-full justify-center">Download CSV</button>
+        </form>
     </div>
 
     <div class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
@@ -85,4 +100,33 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const schoolSelect = document.getElementById('export-school');
+    const classSelect = document.getElementById('export-class');
+    const classOptions = Array.from(classSelect?.querySelectorAll('option[data-school-id]') || []);
+
+    function filterClasses() {
+        if (!schoolSelect || !classSelect) return;
+        const selectedSchool = schoolSelect.value;
+
+        classOptions.forEach(option => {
+            const matches = !selectedSchool || option.dataset.schoolId === selectedSchool;
+            option.hidden = !matches;
+            option.disabled = !matches;
+        });
+
+        const currentOption = classOptions.find(option => option.value === classSelect.value && !option.disabled);
+        if (!currentOption) {
+            classSelect.value = '';
+        }
+    }
+
+    filterClasses();
+    schoolSelect?.addEventListener('change', filterClasses);
+});
+</script>
 {% endblock %}

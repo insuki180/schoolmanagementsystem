@@ -17,15 +17,32 @@
 
     <!-- Filters Card -->
     <div class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
-        <div class="grid sm:grid-cols-3 gap-5">
+        <form method="GET" action="/marks" class="space-y-5">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-5">
+            <div>
+                <label for="sel-school" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--color-text-secondary)">School</label>
+                <div class="relative">
+                    <select id="sel-school" name="school_id" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)" required>
+                        <option value="">Select school...</option>
+                        {% for school in schools %}
+                        <option value="{{ school.id }}" {% if selected_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
             <!-- Class Selection -->
             <div>
                 <label for="sel-class" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--color-text-secondary)">Class</label>
                 <div class="relative">
-                    <select id="sel-class" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)">
+                    <select id="sel-class" name="class_id" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)" required>
                         <option value="">Select class...</option>
                         {% for cls in classes %}
-                        <option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+                        <option value="{{ cls.id }}" data-school-id="{{ cls.school_id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
                         {% endfor %}
                     </select>
                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
@@ -40,7 +57,7 @@
             <div>
                 <label for="sel-subject" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--color-text-secondary)">Subject</label>
                 <div class="relative">
-                    <select id="sel-subject" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)">
+                    <select id="sel-subject" name="subject_id" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)">
                         <option value="">Select subject...</option>
                         {% for sub in subjects %}
                         <option value="{{ sub.id }}" {% if selected_subject == sub.id %}selected{% endif %}>{{ sub.name }}</option>
@@ -58,7 +75,7 @@
             <div>
                 <label for="sel-exam" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--color-text-secondary)">Exam</label>
                 <div class="relative">
-                    <select id="sel-exam" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)">
+                    <select id="sel-exam" name="exam_id" class="input-field appearance-none pr-10 w-full" style="background-color:var(--color-bg)">
                         <option value="">Select exam...</option>
                         {% for ex in exams %}
                         <option value="{{ ex.id }}" {% if selected_exam == ex.id %}selected{% endif %}>{{ ex.name }}</option>
@@ -74,13 +91,14 @@
         </div>
         
         <div class="mt-5 pt-5 border-t flex sm:justify-end" style="border-color:var(--color-border-light)">
-            <button type="button" onclick="loadStudents()" class="btn-primary w-full sm:w-auto">
+            <button type="submit" class="btn-primary w-full sm:w-auto">
                 <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
                 </svg>
-                Load Students
+                Load
             </button>
         </div>
+        </form>
     </div>
 
     {% if students %}
@@ -156,6 +174,11 @@
             </button>
         </div>
     </form>
+    {% else %}
+    <div class="rounded-2xl border border-dashed p-12 text-center" style="background:var(--color-surface);border-color:var(--color-border)">
+        <h3 class="font-semibold text-lg" style="color:var(--color-text)">Choose a school and class</h3>
+        <p class="text-sm mt-1 max-w-sm mx-auto" style="color:var(--color-text-muted)">Marks stay empty until you select both filters and click Load.</p>
+    </div>
     {% endif %}
 
 </div>
@@ -163,30 +186,32 @@
 
 {% block scripts %}
 <script>
-function loadStudents() {
-    const c = document.getElementById('sel-class').value;
-    const s = document.getElementById('sel-subject').value;
-    const e = document.getElementById('sel-exam').value;
-    
-    if (c && s && e) {
-        // Show loading state on button
-        const btn = document.querySelector('button[onclick="loadStudents()"]');
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                         </svg> Loading...`;
-                         
-        window.location = `/marks/entry?school_id={{ active_school_id }}&class_id=${c}&subject_id=${s}&exam_id=${e}`;
-    } else {
-        // Use custom toast if available, otherwise alert
-        if (window.showToast) {
-            showToast('Please select a class, subject, and exam to load students.', 'error');
-        } else {
-            alert('Please select class, subject, and exam');
+document.addEventListener('DOMContentLoaded', () => {
+    const schoolSelect = document.getElementById('sel-school');
+    const classSelect = document.getElementById('sel-class');
+    const classOptions = Array.from(classSelect?.querySelectorAll('option[data-school-id]') || []);
+
+    function filterClasses() {
+        if (!schoolSelect || !classSelect) return;
+        const selectedSchool = schoolSelect.value;
+        let hasSelectedClass = false;
+
+        classOptions.forEach(option => {
+            const matches = !selectedSchool || option.dataset.schoolId === selectedSchool;
+            option.hidden = !matches;
+            option.disabled = !matches;
+            if (matches && option.value === classSelect.value) {
+                hasSelectedClass = true;
+            }
+        });
+
+        if (!hasSelectedClass) {
+            classSelect.value = '';
         }
     }
-}
+
+    filterClasses();
+    schoolSelect?.addEventListener('change', filterClasses);
+});
 </script>
 {% endblock %}

@@ -1,16 +1,17 @@
 """Marks routes — role-scoped entry and viewing."""
 
-from fastapi import APIRouter, Request, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
-from app.dependencies import DBSession, require_role, get_current_user
-from app.models.user import User, UserRole
+
+from app.dependencies import DBSession, get_current_user, require_role
 from app.models.class_ import Class
-from app.models.student import Student
-from app.models.subject import Subject
 from app.models.exam import Exam
 from app.models.mark import Mark
+from app.models.student import Student
+from app.models.subject import Subject
+from app.models.user import User, UserRole
 from app.services.mark_service import bulk_upsert_marks, get_student_marks
 from app.services.permissions import (
     can_edit_marks,
@@ -26,24 +27,30 @@ router = APIRouter(prefix="/marks", tags=["marks"])
 templates = Jinja2Templates(directory="app/templates")
 
 
-@router.get("")
-async def marks_index(
+def _available_schools(request: Request, school) -> list:
+    schools = list(getattr(request.state, "school_options", []) or [])
+    if school and not schools:
+        schools = [school]
+    return schools
+
+
+@router.get("", response_class=HTMLResponse)
+async def marks_page(
+    request: Request,
+    db: DBSession,
+    class_id: int | None = None,
+    subject_id: int | None = None,
+    exam_id: int | None = None,
     school_id: int | None = None,
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
-    target = "/marks/entry"
-    if school_id is not None:
-        target = f"{target}?school_id={school_id}"
-    return RedirectResponse(url=target, status_code=303)
+    school = None
+    if school_id is not None or current_user.role != UserRole.SUPER_ADMIN:
+        school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=False)
 
-
-@router.get("/entry", response_class=HTMLResponse)
-async def marks_entry_page(request: Request, db: DBSession,
-    class_id: int = None, subject_id: int = None, exam_id: int = None, school_id: int | None = None,
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
-    school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
-    effective_school_id = school.id if school else None
-    classes = await get_allowed_classes(db, current_user, school_id=effective_school_id)
+    selected_school_id = school.id if school else None
+    schools = _available_schools(request, school)
+    classes = await get_allowed_classes(db, current_user, school_id=selected_school_id)
     allowed_class_ids = {cls.id for cls in classes}
 
     if class_id and class_id not in allowed_class_ids:
@@ -53,40 +60,35 @@ async def marks_entry_page(request: Request, db: DBSession,
     if class_id:
         selected_class = next((cls for cls in classes if cls.id == class_id), None)
 
+    subjects = []
+    exams = []
     if selected_class:
         subjects = await get_allowed_subjects_for_class(db, current_user, selected_class.id)
-        exams_query = select(Exam).where(Exam.school_id == selected_class.school_id).order_by(Exam.name)
-    elif is_super_admin(current_user):
+    elif selected_school_id is not None and is_super_admin(current_user):
         subject_result = await db.execute(
-            select(Subject).where(Subject.school_id == effective_school_id).order_by(Subject.name)
+            select(Subject).where(Subject.school_id == selected_school_id).order_by(Subject.name)
         )
         subjects = list(subject_result.scalars().all())
-        exams_query = select(Exam).where(Exam.school_id == effective_school_id).order_by(Exam.name)
-    elif is_school_admin(current_user):
+    elif selected_school_id is not None and is_school_admin(current_user):
         subject_result = await db.execute(
-            select(Subject).where(Subject.school_id == current_user.school_id).order_by(Subject.name)
+            select(Subject).where(Subject.school_id == selected_school_id).order_by(Subject.name)
         )
         subjects = list(subject_result.scalars().all())
-        exams_query = select(Exam).where(Exam.school_id == current_user.school_id).order_by(Exam.name)
-    else:
-        subjects = []
-        exams_query = (
-            select(Exam)
-            .where(Exam.school_id == current_user.school_id)
-            .order_by(Exam.name)
+    if selected_school_id is not None:
+        exams_result = await db.execute(
+            select(Exam).where(Exam.school_id == selected_school_id).order_by(Exam.name)
         )
-    exams_result = await db.execute(exams_query)
-    exams = list(exams_result.scalars().all())
+        exams = list(exams_result.scalars().all())
     allowed_subject_ids = {subject.id for subject in subjects}
 
     students = []
     error = None
     if class_id and subject_id and subject_id not in allowed_subject_ids:
         error = "You do not have permission to enter marks for that subject."
-    elif class_id:
+    elif selected_school_id is not None and class_id:
         result = await db.execute(
             select(Student)
-            .where(Student.class_id == class_id, Student.school_id == effective_school_id)
+            .where(Student.class_id == class_id, Student.school_id == selected_school_id)
             .order_by(Student.name)
         )
         students_list = result.scalars().all()
@@ -104,17 +106,47 @@ async def marks_entry_page(request: Request, db: DBSession,
                 "max_marks": existing_mark.max_marks if existing_mark else 100,
             })
 
-    return templates.TemplateResponse("marks/entry.html", {
-        "request": request, "user": current_user,
-        "classes": classes,
-        "subjects": subjects,
-        "exams": exams,
-        "students": students,
-        "selected_class": class_id, "selected_subject": subject_id,
-        "selected_exam": exam_id,
-        "success": None, "error": error,
-        "active_school_id": effective_school_id,
-    })
+    return templates.TemplateResponse(
+        "marks/entry.html",
+        {
+            "request": request,
+            "user": current_user,
+            "schools": schools,
+            "classes": classes,
+            "subjects": subjects,
+            "exams": exams,
+            "students": students,
+            "selected_school_id": selected_school_id,
+            "selected_class": class_id,
+            "selected_subject": subject_id,
+            "selected_exam": exam_id,
+            "success": None,
+            "error": error,
+        },
+    )
+
+
+@router.get("/entry")
+async def marks_index(
+    school_id: int | None = None,
+    class_id: int | None = None,
+    subject_id: int | None = None,
+    exam_id: int | None = None,
+    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
+):
+    params: list[str] = []
+    if school_id is not None:
+        params.append(f"school_id={school_id}")
+    if class_id is not None:
+        params.append(f"class_id={class_id}")
+    if subject_id is not None:
+        params.append(f"subject_id={subject_id}")
+    if exam_id is not None:
+        params.append(f"exam_id={exam_id}")
+    target = "/marks"
+    if params:
+        target = f"{target}?{'&'.join(params)}"
+    return RedirectResponse(url=target, status_code=303)
 
 
 @router.post("/entry")
@@ -122,8 +154,8 @@ async def marks_entry(request: Request, db: DBSession,
     class_id: int = Form(...), subject_id: int = Form(...), exam_id: int = Form(...), school_id: int | None = Form(None),
     current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
     school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
-    effective_school_id = school.id if school else None
-    classes = await get_allowed_classes(db, current_user, school_id=effective_school_id)
+    selected_school_id = school.id if school else None
+    classes = await get_allowed_classes(db, current_user, school_id=selected_school_id)
     allowed_class_ids = {cls.id for cls in classes}
     if class_id not in allowed_class_ids:
         raise HTTPException(status_code=403, detail="You do not have access to this class.")
@@ -147,7 +179,7 @@ async def marks_entry(request: Request, db: DBSession,
         count = await bulk_upsert_marks(db, subject_id, exam_id, entries, current_user.id)
 
     return RedirectResponse(
-        url=f"/marks/entry?school_id={effective_school_id}&class_id={class_id}&subject_id={subject_id}&exam_id={exam_id}",
+        url=f"/marks?school_id={selected_school_id}&class_id={class_id}&subject_id={subject_id}&exam_id={exam_id}",
         status_code=303)
 
 

@@ -22,30 +22,50 @@
     </div>
     {% endif %}
 
-    <!-- Class Selection Card -->
+    <!-- Filter Card -->
     <div class="rounded-2xl border shadow-sm p-6" style="background:var(--color-surface);border-color:var(--color-border)">
-        <label for="class-select" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Select Class</label>
-        <div class="relative max-w-md">
-            <select id="class-select" onchange="window.location='/attendance/mark?school_id={{ active_school_id }}&class_id='+this.value"
-                class="input-field appearance-none pr-10 w-full font-medium" style="background-color:var(--color-bg)">
-                <option value="">Choose a class...</option>
-                {% for cls in classes %}
-                <option value="{{ cls.id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
-                {% endfor %}
-            </select>
-            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
-                </svg>
+        <form method="GET" action="/attendance" class="grid gap-5 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+            <div>
+                <label for="attendance-school" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Select School</label>
+                <div class="relative">
+                    <select id="attendance-school" name="school_id" class="input-field appearance-none pr-10 w-full font-medium" style="background-color:var(--color-bg)" required>
+                        <option value="">Select School</option>
+                        {% for school in schools %}
+                        <option value="{{ school.id }}" {% if selected_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
-        </div>
+            <div>
+                <label for="attendance-class" class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Select Class</label>
+                <div class="relative">
+                    <select id="attendance-class" name="class_id" class="input-field appearance-none pr-10 w-full font-medium" style="background-color:var(--color-bg)" required>
+                        <option value="">Select Class</option>
+                        {% for cls in classes %}
+                        <option value="{{ cls.id }}" data-school-id="{{ cls.school_id }}" {% if selected_class == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style="color:var(--color-text-muted)">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary w-full lg:w-auto justify-center">Load</button>
+        </form>
     </div>
 
     {% if students %}
     <form method="POST" action="/attendance/mark" class="space-y-6">
         <input type="hidden" name="class_id" value="{{ selected_class }}">
         <input type="hidden" name="att_date" value="{{ today }}">
-        <input type="hidden" name="school_id" value="{{ active_school_id }}">
+        <input type="hidden" name="school_id" value="{{ selected_school_id }}">
 
         <!-- Student List Container -->
         <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
@@ -121,6 +141,11 @@
             <h3 class="font-semibold text-lg" style="color:var(--color-text)">No Students Found</h3>
             <p class="text-sm mt-1 max-w-sm mx-auto" style="color:var(--color-text-muted)">There are currently no students enrolled in this class.</p>
         </div>
+        {% else %}
+        <div class="rounded-2xl border border-dashed p-12 text-center" style="background:var(--color-surface);border-color:var(--color-border)">
+            <h3 class="font-semibold text-lg" style="color:var(--color-text)">Choose a school and class</h3>
+            <p class="text-sm mt-1 max-w-sm mx-auto" style="color:var(--color-text-muted)">Attendance records will load only after you select both filters and click Load.</p>
+        </div>
         {% endif %}
     {% endif %}
 
@@ -130,6 +155,32 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const schoolSelect = document.getElementById('attendance-school');
+    const classSelect = document.getElementById('attendance-class');
+    const classOptions = Array.from(classSelect?.querySelectorAll('option[data-school-id]') || []);
+
+    function filterClasses() {
+        if (!schoolSelect || !classSelect) return;
+        const selectedSchool = schoolSelect.value;
+        let hasSelectedClass = false;
+
+        classOptions.forEach(option => {
+            const matches = !selectedSchool || option.dataset.schoolId === selectedSchool;
+            option.hidden = !matches;
+            option.disabled = !matches;
+            if (matches && option.value === classSelect.value) {
+                hasSelectedClass = true;
+            }
+        });
+
+        if (!hasSelectedClass) {
+            classSelect.value = '';
+        }
+    }
+
+    filterClasses();
+    schoolSelect?.addEventListener('change', filterClasses);
+
     // Custom Toggle Logic for the attendance rows
     // Checkbox is: Checked = Absent (Red), Unchecked = Present (Emerald)
     document.querySelectorAll('.absent-checkbox').forEach(cb => {

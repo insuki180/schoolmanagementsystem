@@ -131,12 +131,29 @@ class StudentImportTests(unittest.IsolatedAsyncioTestCase):
 
 
 class StudentExportTests(unittest.IsolatedAsyncioTestCase):
-    async def test_export_students_returns_csv(self):
+    async def test_super_admin_export_requires_school_and_class_filters(self):
+        db = Mock()
+        current_user = User(
+            id=20,
+            name="Super Admin",
+            email="super@example.com",
+            password_hash="x",
+            role=UserRole.SUPER_ADMIN,
+            school_id=None,
+        )
+
+        with self.assertRaises(ValueError) as ctx:
+            await export_students_for_user(db, current_user, school_id=None, class_id=None)
+
+        self.assertIn("select a school", str(ctx.exception).lower())
+
+    async def test_export_students_returns_csv_for_selected_school_and_class(self):
         db = Mock()
         db.execute = AsyncMock(
-            return_value=FakeResult(
-                rows=[("Alice", "Grade 1", "Jane", "123", "jane@example.com")]
-            )
+            side_effect=[
+                FakeResult(scalar=SimpleNamespace(id=3, name="Grade 1", school_id=7)),
+                FakeResult(rows=[("Alice", "Grade 1", "Jane", "123", "jane@example.com")]),
+            ]
         )
         current_user = User(
             id=20,
@@ -147,16 +164,22 @@ class StudentExportTests(unittest.IsolatedAsyncioTestCase):
             school_id=None,
         )
 
-        content = await export_students_for_user(db, current_user)
+        content = await export_students_for_user(db, current_user, school_id=7, class_id=3)
 
         self.assertIn("student_name,class_name,parent_name,parent_phone,parent_email", content)
         self.assertIn("Alice,Grade 1,Jane,123,jane@example.com", content)
+        sql = str(db.execute.await_args.args[0])
+        self.assertIn("students.school_id", sql)
+        self.assertIn("students.class_id", sql)
 
     async def test_school_admin_export_is_school_scoped(self):
         captured = {}
 
         async def execute(statement):
-            captured["sql"] = str(statement)
+            statements = captured.setdefault("sql", [])
+            statements.append(str(statement))
+            if len(statements) == 1:
+                return FakeResult(scalar=SimpleNamespace(id=4, name="Grade 2", school_id=9))
             return FakeResult(rows=[])
 
         db = Mock()
@@ -170,9 +193,11 @@ class StudentExportTests(unittest.IsolatedAsyncioTestCase):
             school_id=9,
         )
 
-        await export_students_for_user(db, current_user)
+        await export_students_for_user(db, current_user, school_id=None, class_id=4)
 
-        self.assertIn("students.school_id", captured["sql"])
+        combined_sql = "\n".join(captured["sql"])
+        self.assertIn("students.school_id", combined_sql)
+        self.assertIn("students.class_id", combined_sql)
 
 
 if __name__ == "__main__":

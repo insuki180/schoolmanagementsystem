@@ -60,18 +60,6 @@
         </div>
 
           <div class="app-header-actions">
-          {% if role == 'super_admin' and request.state.school_options %}
-          <div class="flex items-center gap-2">
-            <label for="school-switcher" class="text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">School</label>
-            <select id="school-switcher" class="input-field py-2 pr-8" onchange="switchSchool(this.value)">
-              <option value="">Select school...</option>
-              {% for school in request.state.school_options %}
-              <option value="{{ school.id }}" {% if request.state.active_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          {% endif %}
-
           {% if user %}
           <div class="app-user-chip">
             <div class="app-user-avatar">{{ user.name[0]|upper if user.name else "U" }}</div>
@@ -118,24 +106,6 @@ function toggleSidebar() {
   if (!sidebar || window.innerWidth >= 768) return;
 
   sidebar.classList.toggle("is-open");
-}
-
-function switchSchool(schoolId) {
-  const url = new URL(window.location.href);
-
-  if (!schoolId) {
-    url.searchParams.delete("school_id");
-    window.location.href = url.pathname === "/schools" ? "/schools" : url.toString();
-    return;
-  }
-
-  if (url.pathname === "/schools") {
-    window.location.href = `/schools/${schoolId}/classes?school_id=${schoolId}`;
-    return;
-  }
-
-  url.searchParams.set("school_id", schoolId);
-  window.location.href = url.toString();
 }
 </script>
 </body>

@@ -55,15 +55,11 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     if user.role == UserRole.SUPER_ADMIN:
         schools_result = await db.execute(select(School).order_by(School.name))
         request.state.school_options = list(schools_result.scalars().all())
-        school_id = request.query_params.get("school_id")
-        if school_id and school_id.isdigit():
-            request.state.active_school_id = int(school_id)
     elif user.school_id:
         school_result = await db.execute(select(School).where(School.id == user.school_id))
         school = school_result.scalar_one_or_none()
         if school:
             request.state.school_options = [school]
-            request.state.active_school_id = school.id
 
     return user
 

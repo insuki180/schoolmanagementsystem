@@ -226,9 +226,37 @@ async def import_students_from_csv(
     }
 
 
-async def export_students_for_user(db: AsyncSession, current_user: User) -> str:
+async def export_students_for_user(
+    db: AsyncSession,
+    current_user: User,
+    *,
+    school_id: int | None = None,
+    class_id: int | None = None,
+) -> str:
     role = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
-    query = (
+    if role == UserRole.SCHOOL_ADMIN.value:
+        effective_school_id = current_user.school_id
+    elif role == UserRole.SUPER_ADMIN.value:
+        if school_id is None:
+            raise ValueError("Please select a school before exporting students.")
+        effective_school_id = school_id
+    else:
+        raise ValueError("You do not have permission to export students.")
+
+    if class_id is None:
+        raise ValueError("Please select a class before exporting students.")
+
+    class_result = await db.execute(
+        select(Class).where(
+            Class.id == class_id,
+            Class.school_id == effective_school_id,
+        )
+    )
+    class_record = class_result.scalar_one_or_none()
+    if not class_record:
+        raise ValueError("Selected class does not belong to the selected school.")
+
+    result = await db.execute(
         select(
             Student.name,
             Class.name,
@@ -238,15 +266,12 @@ async def export_students_for_user(db: AsyncSession, current_user: User) -> str:
         )
         .join(Class, Class.id == Student.class_id)
         .join(User, User.id == Student.parent_id)
+        .where(
+            Student.school_id == effective_school_id,
+            Student.class_id == class_id,
+        )
         .order_by(Class.name, Student.name)
     )
-
-    if role == UserRole.SCHOOL_ADMIN.value:
-        query = query.where(Student.school_id == current_user.school_id)
-    elif role != UserRole.SUPER_ADMIN.value:
-        raise ValueError("You do not have permission to export students.")
-
-    result = await db.execute(query)
 
     output = io.StringIO()
     writer = csv.writer(output)

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from app.dependencies import DBSession, require_role
 from app.models.school import School
 from app.models.user import User, UserRole
+from app.services.permissions import get_allowed_classes
 from app.services.student_csv_service import (
     TEMPLATE_HEADERS,
     build_template_csv,
@@ -39,6 +40,15 @@ async def student_import_page(
     if _is_super_admin(current_user):
         result = await db.execute(select(School).order_by(School.name))
         schools = list(result.scalars().all())
+    elif current_user.school:
+        schools = [current_user.school]
+    else:
+        result = await db.execute(select(School).where(School.id == current_user.school_id))
+        school = result.scalar_one_or_none()
+        if school:
+            schools = [school]
+
+    classes = await get_allowed_classes(db, current_user)
 
     return templates.TemplateResponse(
         "users/student_import.html",
@@ -46,6 +56,7 @@ async def student_import_page(
             "request": request,
             "user": current_user,
             "schools": schools,
+            "classes": classes,
             "template_headers": TEMPLATE_HEADERS,
             "summary": None,
             "error": None,
@@ -77,6 +88,14 @@ async def import_students(
     if _is_super_admin(current_user):
         result = await db.execute(select(School).order_by(School.name))
         schools = list(result.scalars().all())
+    elif current_user.school:
+        schools = [current_user.school]
+    else:
+        result = await db.execute(select(School).where(School.id == current_user.school_id))
+        school = result.scalar_one_or_none()
+        if school:
+            schools = [school]
+    classes = await get_allowed_classes(db, current_user)
 
     if not csv_file.filename or not csv_file.filename.lower().endswith(".csv"):
         return templates.TemplateResponse(
@@ -85,6 +104,7 @@ async def import_students(
                 "request": request,
                 "user": current_user,
                 "schools": schools,
+                "classes": classes,
                 "template_headers": TEMPLATE_HEADERS,
                 "summary": None,
                 "error": "Please upload a CSV file.",
@@ -111,6 +131,7 @@ async def import_students(
             "request": request,
             "user": current_user,
             "schools": schools,
+            "classes": classes,
             "template_headers": TEMPLATE_HEADERS,
             "summary": summary,
             "error": error,
@@ -138,9 +159,19 @@ async def download_import_credentials(
 @router.get("/export/students")
 async def export_students(
     db: DBSession,
+    school_id: int | None = None,
+    class_id: int | None = None,
     current_user: User = Depends(require_role(UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)),
 ):
-    content = await export_students_for_user(db, current_user)
+    try:
+        content = await export_students_for_user(
+            db,
+            current_user,
+            school_id=school_id,
+            class_id=class_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return StreamingResponse(
         io.BytesIO(content.encode("utf-8")),
         media_type="text/csv",
