@@ -137,5 +137,156 @@
     {% endif %}
   </div>
 
+  <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="px-6 py-4 border-b flex items-center justify-between gap-3 flex-wrap" style="border-color:var(--color-border)">
+      <h2 class="font-semibold text-base" style="color:var(--color-text)">All Users</h2>
+      {% if users %}
+      <div class="relative">
+        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color:var(--color-text-muted)" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z"/>
+        </svg>
+        <input type="text" data-search="super-admin-users-table" placeholder="Search users…"
+               class="input-field text-xs py-2" style="padding-left:2rem;width:220px">
+      </div>
+      {% endif %}
+    </div>
+
+    {% if users %}
+    <div class="table-responsive">
+      <table class="w-full" id="super-admin-users-table">
+        <thead>
+          <tr style="background:var(--color-bg)">
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">User</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Role</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">School</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Password Status</th>
+            <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y" style="border-color:var(--color-border-light)">
+          {% for row in users %}
+          <tr class="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+            <td class="px-6 py-4">
+              <p class="font-medium text-sm" style="color:var(--color-text)">{{ row.user.name }}</p>
+              <p class="text-xs mt-0.5" style="color:var(--color-text-muted)">{{ row.user.email }}</p>
+            </td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ row.user.role.value|replace('_', ' ')|title }}</td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ row.school.name if row.school else "Global" }}</td>
+            <td class="px-6 py-4">
+              {% if row.user.is_temp_password or row.user.must_change_password %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                Temporary password active
+              </span>
+              {% else %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                Password updated
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 text-right">
+              <button type="button"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-800/40 transition-colors"
+                      data-reset-password
+                      data-reset-endpoint="/admin/reset-password"
+                      data-user-id="{{ row.user.id }}"
+                      data-user-name="{{ row.user.name }}">
+                Reset Password
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div id="super-admin-users-table-empty" class="hidden py-8 text-center text-sm" style="color:var(--color-text-muted)">No users match your search.</div>
+    </div>
+    {% else %}
+    <div class="py-12 text-center text-sm" style="color:var(--color-text-muted)">No users available.</div>
+    {% endif %}
+  </div>
+
+  <div id="password-result-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-950/40 px-4">
+    <div class="w-full max-w-md rounded-2xl border shadow-xl p-6 space-y-4" style="background:var(--color-surface);border-color:var(--color-border)">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="font-semibold text-lg" style="color:var(--color-text)">Temporary Password Generated</h3>
+          <p id="password-result-user" class="text-sm mt-1" style="color:var(--color-text-muted)"></p>
+        </div>
+        <button type="button" id="password-result-close" class="text-sm font-semibold" style="color:var(--color-text-muted)">Close</button>
+      </div>
+      <div class="rounded-xl border px-4 py-3" style="border-color:var(--color-border);background:var(--color-bg)">
+        <p class="text-xs uppercase tracking-wider mb-1" style="color:var(--color-text-muted)">Temporary Password</p>
+        <p id="password-result-value" class="font-mono text-lg" style="color:var(--color-text)"></p>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button type="button" id="password-copy-button" class="btn-primary">Copy Password</button>
+      </div>
+    </div>
+  </div>
+
 </div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(() => {
+  const modal = document.getElementById("password-result-modal");
+  const resultUser = document.getElementById("password-result-user");
+  const resultValue = document.getElementById("password-result-value");
+  const closeButton = document.getElementById("password-result-close");
+  const copyButton = document.getElementById("password-copy-button");
+
+  if (!modal) return;
+
+  const closeModal = () => {
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+  };
+
+  closeButton?.addEventListener("click", closeModal);
+  modal.addEventListener("click", event => {
+    if (event.target === modal) closeModal();
+  });
+
+  copyButton?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(resultValue.textContent || "");
+      window.Toast?.success("Copied", "Temporary password copied to clipboard.");
+    } catch (error) {
+      window.Toast?.error("Copy failed", "Please copy the password manually.");
+    }
+  });
+
+  document.querySelectorAll("[data-reset-password]").forEach(button => {
+    button.addEventListener("click", async () => {
+      const userName = button.dataset.userName || "this user";
+      const confirmed = await window.Modal.confirm(
+        "Reset Password",
+        `Generate a new temporary password for ${userName}?`
+      );
+      if (!confirmed) return;
+
+      button.disabled = true;
+      try {
+        const response = await fetch(button.dataset.resetEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ userId: button.dataset.userId }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.detail || "Password reset failed.");
+        }
+
+        resultUser.textContent = `${userName} can sign in with this password and will be forced to change it on login.`;
+        resultValue.textContent = payload.tempPassword || "";
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      } catch (error) {
+        window.Toast?.error("Reset failed", error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+})();
+</script>
 {% endblock %}

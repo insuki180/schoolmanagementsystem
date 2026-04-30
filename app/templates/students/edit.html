@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Edit Student — SchoolMS{% endblock %}
+{% block page_title %}Edit Student{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto fade-in space-y-6">
+  <div>
+    <a href="/dashboard" class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400 transition-colors mb-2">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+      </svg>
+      Back to Dashboard
+    </a>
+    <h1 class="text-2xl font-bold mt-2" style="color:var(--color-text)">Edit Student</h1>
+    <p class="text-sm mt-1" style="color:var(--color-text-muted)">Update student placement and parent contact details within this school.</p>
+  </div>
+
+  <form id="student-edit-form" class="rounded-2xl border shadow-sm p-6 sm:p-8 space-y-6" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div>
+      <label class="block text-sm font-semibold mb-1.5" style="color:var(--color-text)">Student Name</label>
+      <input type="text" name="name" required value="{{ student.name }}" class="input-field w-full">
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5" style="color:var(--color-text)">Class</label>
+      <select name="class_id" required class="input-field w-full">
+        {% for cls in classes %}
+        <option value="{{ cls.id }}" {% if cls.id == student.class_id %}selected{% endif %}>{{ cls.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold mb-1.5" style="color:var(--color-text)">Parent Phone</label>
+      <input type="text" name="parent_phone" required value="{{ parent.phone_number if parent else '' }}" class="input-field w-full">
+      <p class="text-xs mt-1.5" style="color:var(--color-text-muted)">Parent account: {{ parent.email if parent else "Unknown" }}</p>
+    </div>
+    <div class="pt-4 border-t flex justify-end" style="border-color:var(--color-border-light)">
+      <button type="submit" class="btn-primary">Save Changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(() => {
+  const form = document.getElementById("student-edit-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    const payload = {
+      name: formData.get("name"),
+      class_id: Number(formData.get("class_id")),
+      parent_phone: formData.get("parent_phone"),
+    };
+
+    try {
+      const response = await fetch("/school-admin/student/{{ student.id }}", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.detail || "Unable to update student.");
+      }
+      window.location.href = "/dashboard?msg=Student%20updated%20successfully";
+    } catch (error) {
+      window.Toast?.error("Update failed", error.message);
+    }
+  });
+})();
+</script>
+{% endblock %}

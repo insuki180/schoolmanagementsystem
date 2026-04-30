@@ -1,22 +1,37 @@
 """User management routes — create admins, teachers, students+parents."""
 
-from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Request, Depends, Form, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from app.dependencies import DBSession, require_role
 from app.models.user import User, UserRole
 from app.models.school import School
 from app.models.class_ import Class
+from app.models.student import Student
+from app.schemas.auth import ResetPasswordRequest
+from app.schemas.user import StudentUpdateRequest, TeacherUpdateRequest
 from app.services.user_service import (
     create_school_admin,
     create_teacher,
     create_student_and_parent,
     get_users_by_school,
+    get_user_by_id,
+    reset_user_password,
+    update_student_profile_by_school_admin,
+    update_teacher_profile,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
+management_router = APIRouter(tags=["users"])
 templates = Jinja2Templates(directory="app/templates")
+
+
+def _parse_user_id(raw_user_id: str) -> int:
+    try:
+        return int(raw_user_id)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Invalid user ID.") from exc
 
 
 @router.get("/create-admin", response_class=HTMLResponse)
@@ -112,9 +127,133 @@ async def manage_teachers_page(
     })
 
 
+@management_router.post("/admin/reset-password")
+async def super_admin_reset_password(
+    payload: ResetPasswordRequest,
+    db: DBSession,
+    current_user: User = Depends(require_role(UserRole.SUPER_ADMIN)),
+):
+    temp_password = await reset_user_password(
+        db,
+        acting_user=current_user,
+        target_user_id=_parse_user_id(payload.userId),
+    )
+    return JSONResponse({"tempPassword": temp_password})
+
+
+@management_router.post("/school-admin/reset-password")
+async def school_admin_reset_password(
+    payload: ResetPasswordRequest,
+    db: DBSession,
+    current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN)),
+):
+    temp_password = await reset_user_password(
+        db,
+        acting_user=current_user,
+        target_user_id=_parse_user_id(payload.userId),
+    )
+    return JSONResponse({"tempPassword": temp_password})
+
+
+@management_router.get("/school-admin/teacher/{teacher_id}/edit", response_class=HTMLResponse)
+async def edit_teacher_page(
+    request: Request,
+    teacher_id: int,
+    db: DBSession,
+    current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN)),
+):
+    teacher = await get_user_by_id(db, teacher_id)
+    if not teacher or teacher.role != UserRole.TEACHER:
+        return RedirectResponse(url="/dashboard?msg=Teacher%20not%20found", status_code=303)
+    if teacher.school_id != current_user.school_id:
+        return RedirectResponse(url="/dashboard?msg=Access%20denied", status_code=303)
+
+    return templates.TemplateResponse("users/edit_teacher.html", {
+        "request": request,
+        "user": current_user,
+        "teacher": teacher,
+    })
+
+
+@management_router.get("/school-admin/student/{student_id}/edit", response_class=HTMLResponse)
+async def edit_student_page(
+    request: Request,
+    student_id: int,
+    db: DBSession,
+    current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN)),
+):
+    student_result = await db.execute(select(Student).where(Student.id == student_id))
+    student = student_result.scalar_one_or_none()
+    if not student:
+        return RedirectResponse(url="/dashboard?msg=Student%20not%20found", status_code=303)
+    if student.school_id != current_user.school_id:
+        return RedirectResponse(url="/dashboard?msg=Access%20denied", status_code=303)
+
+    parent_result = await db.execute(select(User).where(User.id == student.parent_id))
+    parent = parent_result.scalar_one_or_none()
+    classes_result = await db.execute(
+        select(Class)
+        .where(Class.school_id == current_user.school_id)
+        .order_by(Class.name)
+    )
+    return templates.TemplateResponse("students/edit.html", {
+        "request": request,
+        "user": current_user,
+        "student": student,
+        "parent": parent,
+        "classes": classes_result.scalars().all(),
+    })
+
+
+@management_router.put("/school-admin/teacher/{teacher_id}")
+async def school_admin_update_teacher(
+    teacher_id: int,
+    payload: TeacherUpdateRequest,
+    db: DBSession,
+    current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN)),
+):
+    teacher = await update_teacher_profile(
+        db,
+        acting_user=current_user,
+        teacher_id=teacher_id,
+        name=payload.name,
+        phone=payload.phone,
+    )
+    return JSONResponse({
+        "id": teacher.id,
+        "name": teacher.name,
+        "phone": teacher.phone_number,
+    })
+
+
+@management_router.put("/school-admin/student/{student_id}")
+async def school_admin_update_student(
+    student_id: int,
+    payload: StudentUpdateRequest,
+    db: DBSession,
+    current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN)),
+):
+    student = await update_student_profile_by_school_admin(
+        db,
+        acting_user=current_user,
+        student_id=student_id,
+        name=payload.name,
+        class_id=payload.class_id,
+        parent_phone=payload.parent_phone,
+    )
+    parent_result = await db.execute(select(User).where(User.id == student.parent_id))
+    parent = parent_result.scalar_one_or_none()
+    return JSONResponse({
+        "id": student.id,
+        "name": student.name,
+        "classId": student.class_id,
+        "parentPhone": parent.phone_number if parent else "",
+    })
+
+
 @router.get("/create-student", response_class=HTMLResponse)
 async def create_student_page(request: Request, db: DBSession,
-    current_user: User = Depends(require_role(UserRole.TEACHER))):
+    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
     result = await db.execute(
         select(Class).where(Class.school_id == current_user.school_id).order_by(Class.name))
     return templates.TemplateResponse("students/create.html", {
@@ -128,7 +267,7 @@ async def create_student_action(request: Request, db: DBSession,
     student_name: str = Form(...), class_id: int = Form(...),
     parent_name: str = Form(...), parent_email: str = Form(...),
     parent_phone: str = Form(...),
-    current_user: User = Depends(require_role(UserRole.TEACHER))):
+    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
     try:
         student, parent, temp_password = await create_student_and_parent(
             db, student_name, class_id, parent_name, parent_email,

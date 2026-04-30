@@ -24,6 +24,7 @@ class User(Base):
     phone_number = Column(String(20), nullable=True)
     role = Column(Enum(UserRole), nullable=False)
     school_id = Column(Integer, ForeignKey("schools.id"), nullable=True)
+    is_temp_password = Column(Boolean, default=False)
     must_change_password = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)

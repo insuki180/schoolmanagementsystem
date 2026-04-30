@@ -14,6 +14,24 @@ class ChangePasswordRequest(BaseModel):
     confirm_password: str
 
 
+class LoginResponse(BaseModel):
+    token: str
+    forcePasswordChange: bool
+
+
+class ChangePasswordApiRequest(BaseModel):
+    oldPassword: str
+    newPassword: str
+
+
+class ResetPasswordRequest(BaseModel):
+    userId: str
+
+
+class ResetPasswordResponse(BaseModel):
+    tempPassword: str
+
+
 class TokenData(BaseModel):
     user_id: int
     email: str

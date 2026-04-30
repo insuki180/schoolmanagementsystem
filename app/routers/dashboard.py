@@ -77,10 +77,21 @@ async def super_admin_dashboard(request: Request, db, current_user: User):
             "student_count": student_count.scalar() or 0,
         })
 
+    user_result = await db.execute(
+        select(User, School)
+        .outerjoin(School, School.id == User.school_id)
+        .order_by(User.role, User.name)
+    )
+    users = [
+        {"user": user, "school": school}
+        for user, school in user_result.all()
+    ]
+
     return templates.TemplateResponse("dashboard/super_admin.html", {
         "request": request,
         "user": current_user,
         "school_stats": school_stats,
+        "users": users,
     })
 
 
@@ -141,11 +152,35 @@ async def school_admin_dashboard(request: Request, db, current_user: User):
         .limit(5)
     )
 
+    teacher_result = await db.execute(
+        select(User)
+        .where(
+            User.school_id == current_user.school_id,
+            User.role == UserRole.TEACHER,
+        )
+        .order_by(User.name)
+    )
+    teachers = list(teacher_result.scalars().all())
+
+    student_result = await db.execute(
+        select(Student, Class, User)
+        .join(Class, Class.id == Student.class_id)
+        .join(User, User.id == Student.parent_id)
+        .where(Student.school_id == current_user.school_id)
+        .order_by(Student.name)
+    )
+    students = [
+        {"student": student, "class": class_, "parent": parent}
+        for student, class_, parent in student_result.all()
+    ]
+
     return templates.TemplateResponse("dashboard/admin.html", {
         "request": request,
         "user": current_user,
         "class_stats": class_stats,
         "recent_notifications": notifs.scalars().all(),
+        "teachers": teachers,
+        "students": students,
     })
 
 

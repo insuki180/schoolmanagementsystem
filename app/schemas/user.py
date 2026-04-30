@@ -37,6 +37,17 @@ class StudentCreateRequest(BaseModel):
     parent_phone: str | None = None
 
 
+class TeacherUpdateRequest(BaseModel):
+    name: str
+    phone: str
+
+
+class StudentUpdateRequest(BaseModel):
+    name: str
+    class_id: int
+    parent_phone: str
+
+
 class UserResponse(BaseModel):
     id: int
     name: str

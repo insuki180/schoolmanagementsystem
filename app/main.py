@@ -120,6 +120,20 @@ async def ensure_notification_student_target_schema(engine):
         logger.warning("Could not verify personal notification schema: %s", exc)
 
 
+async def ensure_temp_password_schema(engine):
+    """Keep temporary-password state compatible on existing deployments."""
+    statements = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_temp_password BOOLEAN DEFAULT FALSE",
+        "UPDATE users SET is_temp_password = TRUE WHERE must_change_password = TRUE AND is_temp_password = FALSE",
+    ]
+    try:
+        async with engine.begin() as conn:
+            for statement in statements:
+                await conn.execute(text(statement))
+    except Exception as exc:
+        logger.warning("Could not verify temporary password schema: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -128,6 +142,7 @@ async def lifespan(app: FastAPI):
     await ensure_academic_control_schema(engine)
     await ensure_parent_contact_schema(engine)
     await ensure_notification_student_target_schema(engine)
+    await ensure_temp_password_schema(engine)
     yield
     # Shutdown
     await engine.dispose()
@@ -153,6 +168,7 @@ app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(schools.router)
 app.include_router(users.router)
+app.include_router(users.management_router)
 app.include_router(attendance.router)
 app.include_router(notifications.router)
 app.include_router(exams.router)
