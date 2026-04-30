@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
@@ -20,6 +22,7 @@ from app.services.permissions import get_allowed_classes, is_school_admin, is_su
 
 
 TWOPLACES = Decimal("0.01")
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -29,6 +32,12 @@ class FinanceScope:
     school: School | None
     selected_school_id: int | None
     selected_class_id: int | None
+
+
+@dataclass
+class PrefetchedFinanceData:
+    configs_by_student: dict[int, list[StudentFeeConfig]]
+    ledger_by_student: dict[int, list[FeeLedger]]
 
 
 def _decimal(value) -> Decimal:
@@ -85,6 +94,7 @@ def compute_fee_breakdown(
 ):
     active_configs = sorted(_active_configs(fee_configs), key=lambda item: item.effective_from)
     if not active_configs:
+        logger.debug("Finance breakdown requested without active configs; returning empty breakdown.")
         return []
 
     start_month = _month_start(active_configs[0].effective_from)
@@ -93,6 +103,14 @@ def compute_fee_breakdown(
     end_month = _latest_month(end_month, latest_payment_month)
 
     remaining_paid = sum((_decimal(payment.amount_paid) for payment in payments), Decimal("0.00"))
+    logger.debug(
+        "Computing finance breakdown: config_count=%s payment_count=%s start_month=%s end_month=%s total_paid=%s",
+        len(active_configs),
+        len(payments),
+        start_month.isoformat(),
+        end_month.isoformat(),
+        float(remaining_paid),
+    )
     rows = []
     cursor = start_month
 
@@ -158,48 +176,13 @@ async def get_student_finance_details(
     if not student:
         raise HTTPException(status_code=404, detail="Student not found.")
 
-    configs_result = await db.execute(
-        select(StudentFeeConfig)
-        .where(StudentFeeConfig.student_id == student_id)
-        .order_by(StudentFeeConfig.effective_from, StudentFeeConfig.id)
-    )
-    fee_configs = list(configs_result.scalars().all())
-
-    ledger_result = await db.execute(
-        select(FeeLedger)
-        .where(FeeLedger.student_id == student_id)
-        .order_by(FeeLedger.payment_date, FeeLedger.id)
-    )
-    ledger = list(ledger_result.scalars().all())
-    breakdown = compute_fee_breakdown(
-        fee_configs=fee_configs,
-        payments=ledger,
+    prefetched = await _load_finance_data_for_students(db, [student_id])
+    return _build_finance_details_payload(
+        student=student,
+        fee_configs=prefetched.configs_by_student.get(student_id, []),
+        ledger=prefetched.ledger_by_student.get(student_id, []),
         through_month=through_month,
     )
-    current_month = _format_month(_parse_month(through_month))
-    current_row = next((row for row in breakdown if row["month"] == current_month), None)
-    latest_config = fee_configs[-1] if fee_configs else None
-
-    return {
-        "student": student,
-        "class_name": student.class_.name if student.class_ else "N/A",
-        "parent_name": student.parent.name if student.parent else "N/A",
-        "monthly_fee": float(_decimal(latest_config.monthly_fee)) if latest_config else 0.0,
-        "current_status": current_row["status"] if current_row else "UNCONFIGURED",
-        "current_due": current_row["balance"] if current_row else 0.0,
-        "ledger": [
-            {
-                "id": entry.id,
-                "amount_paid": entry.amount_paid,
-                "payment_date": entry.payment_date.isoformat(),
-                "payment_mode": entry.payment_mode,
-                "note": entry.note or "",
-                "created_by": entry.created_by,
-            }
-            for entry in ledger
-        ],
-        "breakdown": breakdown,
-    }
 
 
 async def create_fee_config(
@@ -329,8 +312,16 @@ async def build_student_fee_row(
     *,
     student: Student,
     month: str | None = None,
+    prefetched: PrefetchedFinanceData | None = None,
 ):
-    details = await get_student_finance_details(db, student_id=student.id, through_month=month)
+    if prefetched is None:
+        prefetched = await _load_finance_data_for_students(db, [student.id])
+    details = _build_finance_details_payload(
+        student=student,
+        fee_configs=prefetched.configs_by_student.get(student.id, []),
+        ledger=prefetched.ledger_by_student.get(student.id, []),
+        through_month=month,
+    )
     current_month = _format_month(_parse_month(month))
     current_row = next((row for row in details["breakdown"] if row["month"] == current_month), None)
     return {
@@ -349,23 +340,129 @@ async def get_finance_summary_for_students(
     students: list[Student],
     month: str | None = None,
 ):
+    if not students:
+        return {
+            "total_expected": 0.0,
+            "total_collected": 0.0,
+            "total_pending": 0.0,
+            "pending_rows": [],
+            "pending_count": 0,
+            "rows": [],
+        }
+
+    prefetched = await _load_finance_data_for_students(db, [student.id for student in students])
     total_expected = Decimal("0.00")
     total_collected = Decimal("0.00")
     total_pending = Decimal("0.00")
     pending_rows = []
+    rows = []
 
     for student in students:
-        row = await build_student_fee_row(db, student=student, month=month)
+        row = await build_student_fee_row(db, student=student, month=month, prefetched=prefetched)
+        rows.append(row)
         total_expected += _decimal(row["monthly_fee"])
         total_collected += _decimal(row["paid"])
         total_pending += _decimal(row["due"])
         if row["status"] in {"DUE", "PARTIAL"}:
             pending_rows.append(row)
 
-    return {
+    summary = {
         "total_expected": float(total_expected),
         "total_collected": float(total_collected),
         "total_pending": float(total_pending),
         "pending_rows": pending_rows,
         "pending_count": len(pending_rows),
+        "rows": rows,
+    }
+    logger.info(
+        "Finance summary computed: student_count=%s pending_count=%s total_expected=%s total_collected=%s total_pending=%s",
+        len(students),
+        summary["pending_count"],
+        summary["total_expected"],
+        summary["total_collected"],
+        summary["total_pending"],
+    )
+    return summary
+
+
+async def _load_finance_data_for_students(
+    db: AsyncSession,
+    student_ids: list[int],
+) -> PrefetchedFinanceData:
+    if not student_ids:
+        return PrefetchedFinanceData(configs_by_student={}, ledger_by_student={})
+
+    configs_result = await db.execute(
+        select(StudentFeeConfig)
+        .where(StudentFeeConfig.student_id.in_(student_ids))
+        .order_by(StudentFeeConfig.student_id, StudentFeeConfig.effective_from, StudentFeeConfig.id)
+    )
+    ledger_result = await db.execute(
+        select(FeeLedger)
+        .where(FeeLedger.student_id.in_(student_ids))
+        .order_by(FeeLedger.student_id, FeeLedger.payment_date, FeeLedger.id)
+    )
+
+    configs_by_student = defaultdict(list)
+    for config in configs_result.scalars().all():
+        configs_by_student[config.student_id].append(config)
+
+    ledger_by_student = defaultdict(list)
+    for entry in ledger_result.scalars().all():
+        ledger_by_student[entry.student_id].append(entry)
+
+    return PrefetchedFinanceData(
+        configs_by_student=dict(configs_by_student),
+        ledger_by_student=dict(ledger_by_student),
+    )
+
+
+def _build_finance_details_payload(
+    *,
+    student: Student,
+    fee_configs: list[StudentFeeConfig],
+    ledger: list[FeeLedger],
+    through_month: str | None = None,
+):
+    breakdown = compute_fee_breakdown(
+        fee_configs=fee_configs,
+        payments=ledger,
+        through_month=through_month,
+    )
+    logger.debug(
+        "Loaded student finance details: student_id=%s config_count=%s payment_count=%s breakdown_rows=%s",
+        student.id,
+        len(fee_configs),
+        len(ledger),
+        len(breakdown),
+    )
+    current_month = _format_month(_parse_month(through_month))
+    current_row = next((row for row in breakdown if row["month"] == current_month), None)
+    latest_config = fee_configs[-1] if fee_configs else None
+
+    return {
+        "student": {
+            "id": student.id,
+            "name": student.name,
+            "class_id": student.class_id,
+            "parent_id": student.parent_id,
+            "school_id": student.school_id,
+        },
+        "class_name": student.class_.name if student.class_ else "N/A",
+        "parent_name": student.parent.name if student.parent else "N/A",
+        "monthly_fee": float(_decimal(latest_config.monthly_fee)) if latest_config else 0.0,
+        "current_status": current_row["status"] if current_row else "UNCONFIGURED",
+        "current_due": current_row["balance"] if current_row else 0.0,
+        "ledger": [
+            {
+                "id": entry.id,
+                "amount_paid": entry.amount_paid,
+                "payment_date": entry.payment_date.isoformat(),
+                "payment_mode": entry.payment_mode,
+                "note": entry.note or "",
+                "created_by": entry.created_by,
+            }
+            for entry in ledger
+        ],
+        "breakdown": breakdown,
     }

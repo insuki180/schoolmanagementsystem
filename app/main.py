@@ -215,6 +215,11 @@ async def health_check():
     """Health check endpoint for deployment orchestration (e.g. Render)."""
     return {"status": "ok"}
 
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon_redirect():
+    return RedirectResponse(url="/static/favicon.svg", status_code=307)
+
 # Static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

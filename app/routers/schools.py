@@ -1,5 +1,7 @@
 """School management routes — school list, creation, and analytics."""
 
+import logging
+
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -14,6 +16,7 @@ from app.models.attendance import Attendance
 
 router = APIRouter(prefix="/schools", tags=["schools"])
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 
 def _school_summary_query():
@@ -161,6 +164,12 @@ async def school_detail(
     if current_user.role not in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN):
         raise HTTPException(status_code=403, detail="You don't have permission to access this resource.")
 
+    logger.info(
+        "Loading school detail: school_id=%s user_id=%s role=%s",
+        school_id,
+        current_user.id,
+        current_user.role.value if hasattr(current_user.role, "value") else current_user.role,
+    )
     summary = await _get_school_or_403(db, current_user, school_id)
 
     class_students = (
@@ -209,6 +218,11 @@ async def school_detail(
     )
 
     class_rows = class_result.all()
+    logger.info(
+        "School detail joins complete: school_id=%s class_rows=%s",
+        school_id,
+        len(class_rows),
+    )
     class_breakdown = [
         {
             "class": cls,

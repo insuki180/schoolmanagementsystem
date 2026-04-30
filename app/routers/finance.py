@@ -14,7 +14,6 @@ from app.models.user import User, UserRole
 from app.schemas.finance import FeeConfigCreateRequest, FeePaymentCreateRequest
 from app.services.finance_service import (
     add_fee_payment,
-    build_student_fee_row,
     create_fee_config,
     get_finance_scope,
     get_finance_summary_for_students,
@@ -89,9 +88,8 @@ async def finance_students_page(
         school_id=school_id,
         class_id=class_id,
     )
-    rows = []
-    for student in scope.students:
-        rows.append(await build_student_fee_row(db, student=student, month=month))
+    summary = await get_finance_summary_for_students(db, students=scope.students, month=month)
+    rows = summary["rows"]
 
     return templates.TemplateResponse(
         "finance/students.html",

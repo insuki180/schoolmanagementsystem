@@ -1,9 +1,12 @@
 """Class management routes."""
 
+import logging
+
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from app.dependencies import DBSession, require_role, get_current_user
 from app.models.user import User, UserRole
 from app.models.class_ import Class, ClassSubject
@@ -17,6 +20,7 @@ from app.services.school_scope import resolve_school_scope
 
 router = APIRouter(prefix="/classes", tags=["classes"])
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_class=HTMLResponse)
@@ -55,15 +59,47 @@ async def create_class(request: Request, db: DBSession,
 async def class_detail(request: Request, class_id: int, db: DBSession,
     school_id: int | None = None,
     current_user: User = Depends(get_current_user)):
-    cls_result = await db.execute(select(Class).where(Class.id == class_id))
+    logger.info(
+        "Fetching class detail: class_id=%s requested_school_id=%s user_id=%s role=%s",
+        class_id,
+        school_id,
+        current_user.id,
+        current_user.role.value if hasattr(current_user.role, "value") else current_user.role,
+    )
+    cls_result = await db.execute(
+        select(Class)
+        .options(
+            selectinload(Class.students),
+            selectinload(Class.teachers),
+            selectinload(Class.subject_assignments).selectinload(ClassSubject.subject),
+            selectinload(Class.subject_assignments).selectinload(ClassSubject.teacher),
+        )
+        .where(Class.id == class_id)
+    )
     cls = cls_result.scalar_one_or_none()
     if not cls:
+        logger.warning("Class detail lookup failed: class_id=%s not found", class_id)
         return RedirectResponse(url="/classes", status_code=303)
     school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=is_super_admin(current_user))
     effective_school_id = school.id if school else None
     if effective_school_id is not None and cls.school_id != effective_school_id:
+        logger.warning(
+            "Class detail denied by school scope: class_id=%s class_school_id=%s effective_school_id=%s user_id=%s",
+            class_id,
+            cls.school_id,
+            effective_school_id,
+            current_user.id,
+        )
         raise HTTPException(status_code=403, detail="You do not have access to this class.")
     if not is_super_admin(current_user) and cls.school_id != current_user.school_id and current_user.role != UserRole.PARENT:
+        logger.warning(
+            "Class detail denied by role scope: class_id=%s class_school_id=%s user_school_id=%s user_id=%s role=%s",
+            class_id,
+            cls.school_id,
+            current_user.school_id,
+            current_user.id,
+            current_user.role.value if hasattr(current_user.role, "value") else current_user.role,
+        )
         raise HTTPException(status_code=403, detail="You do not have access to this class.")
 
     # Students
@@ -110,6 +146,15 @@ async def class_detail(request: Request, class_id: int, db: DBSession,
         {"response": response, "student": student}
         for response, student in response_result.all()
     ]
+
+    logger.info(
+        "Class detail loaded: class_id=%s school_id=%s student_count=%s assignment_count=%s absence_response_count=%s",
+        cls.id,
+        cls.school_id,
+        len(students),
+        len(cls.subject_assignments),
+        len(absence_responses),
+    )
 
     return templates.TemplateResponse("classes/detail.html", {
         "request": request, "user": current_user,
