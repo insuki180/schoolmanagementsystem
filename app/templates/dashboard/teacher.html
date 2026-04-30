@@ -8,6 +8,9 @@
   <div>
     <h1 class="text-2xl font-bold" style="color:var(--color-text)">Welcome back, {{ user.name.split()[0] if user.name else 'Teacher' }}! 👋</h1>
     <p class="text-sm mt-1" style="color:var(--color-text-muted)">Here's your class overview and quick actions for today.</p>
+    <p class="text-xs mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+      Pending Fees: {{ pending_fee_count }} students
+    </p>
   </div>
 
   <!-- Quick Action Cards -->

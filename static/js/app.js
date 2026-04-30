@@ -245,6 +245,51 @@ const Drawer = {
   }
 };
 
+/* ── Sidebar Layout ─────────────────────────────────────────── */
+const SidebarLayout = {
+  storageKey: "sidebar-open",
+  init() {
+    this.applyInitialState();
+    window.addEventListener("resize", () => this.syncForViewport());
+  },
+  applyInitialState() {
+    const sidebar = document.getElementById("sidebar");
+    if (!sidebar) return;
+
+    if (window.innerWidth < 768) {
+      document.body.classList.remove("sidebar-collapsed");
+      sidebar.classList.remove("is-open");
+      return;
+    }
+
+    const stored = localStorage.getItem(this.storageKey);
+    const isOpen = stored === null ? true : stored === "true";
+    document.body.classList.toggle("sidebar-collapsed", !isOpen);
+  },
+  syncForViewport() {
+    const sidebar = document.getElementById("sidebar");
+    if (!sidebar) return;
+    if (window.innerWidth < 768) {
+      document.body.classList.remove("sidebar-collapsed");
+      sidebar.classList.remove("is-open");
+      return;
+    }
+    this.applyInitialState();
+  },
+  toggle() {
+    const sidebar = document.getElementById("sidebar");
+    if (!sidebar) return;
+
+    if (window.innerWidth < 768) {
+      sidebar.classList.toggle("is-open");
+      return;
+    }
+
+    const isCollapsed = document.body.classList.toggle("sidebar-collapsed");
+    localStorage.setItem(this.storageKey, isCollapsed ? "false" : "true");
+  }
+};
+
 /* ── Search / Filter Tables ─────────────────────────────────── */
 const TableSearch = {
   init() {
@@ -319,6 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
   PasswordStrength.init();
   Modal.init();
   Drawer.init();
+  SidebarLayout.init();
   TableSearch.init();
   FormLoader.init();
   Alerts.init();
@@ -329,3 +375,4 @@ document.addEventListener("DOMContentLoaded", () => {
 window.Toast = Toast;
 window.ThemeManager = ThemeManager;
 window.Modal = Modal;
+window.SidebarLayout = SidebarLayout;

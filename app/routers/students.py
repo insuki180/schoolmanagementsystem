@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.dependencies import DBSession, get_current_user
 from app.models.user import User
+from app.services.finance_service import get_student_finance_details
 from app.services.permissions import can_view_student, is_parent
 from app.services.student_view_service import get_student_details_context
 
@@ -28,6 +29,7 @@ async def student_details(
     context = await get_student_details_context(db, student_id=student_id)
     if not context:
         raise HTTPException(status_code=404, detail="Student not found.")
+    finance_details = await get_student_finance_details(db, student_id=student_id)
 
     return templates.TemplateResponse(
         "students/details.html",
@@ -35,6 +37,7 @@ async def student_details(
             "request": request,
             "user": current_user,
             **context,
+            "finance_details": finance_details,
             "success": request.query_params.get("success"),
             "active_school_id": context["student"].school_id,
         },

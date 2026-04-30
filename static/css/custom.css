@@ -256,6 +256,7 @@ button:disabled,
 #sidebar {
   background: var(--sidebar-bg);
   box-shadow: 22px 0 48px rgba(15, 23, 42, 0.18);
+  overflow-x: hidden;
 }
 
 .sidebar-brand {
@@ -579,7 +580,34 @@ button:disabled,
   }
 
   #sidebar-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 768px) {
+  body.sidebar-collapsed #sidebar {
+    width: 4rem;
+  }
+
+  body.sidebar-collapsed #app-main {
+    margin-left: 4rem;
+  }
+
+  body.sidebar-collapsed .sidebar-brand {
+    justify-content: center;
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
+
+  body.sidebar-collapsed .sidebar-brand > div:last-child,
+  body.sidebar-collapsed .sidebar-nav-link span {
     display: none;
+  }
+
+  body.sidebar-collapsed .sidebar-nav-link {
+    justify-content: center;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 }
 

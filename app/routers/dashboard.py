@@ -13,6 +13,7 @@ from app.models.attendance import Attendance
 from app.models.notification import Notification
 from app.models.mark import Mark
 from app.services.notification_service import get_notifications_for_parent
+from app.services.finance_service import get_finance_scope, get_finance_summary_for_students
 from app.services.absence_response_service import get_parent_absence_alerts
 from app.services.parent_portal_service import (
     build_parent_notification_cards,
@@ -86,12 +87,15 @@ async def super_admin_dashboard(request: Request, db, current_user: User):
         {"user": user, "school": school}
         for user, school in user_result.all()
     ]
+    finance_scope = await get_finance_scope(db, acting_user=current_user)
+    finance_summary = await get_finance_summary_for_students(db, students=finance_scope.students)
 
     return templates.TemplateResponse("dashboard/super_admin.html", {
         "request": request,
         "user": current_user,
         "school_stats": school_stats,
         "users": users,
+        "pending_fee_count": finance_summary["pending_count"],
     })
 
 
@@ -173,6 +177,12 @@ async def school_admin_dashboard(request: Request, db, current_user: User):
         {"student": student, "class": class_, "parent": parent}
         for student, class_, parent in student_result.all()
     ]
+    finance_scope = await get_finance_scope(
+        db,
+        acting_user=current_user,
+        school_id=current_user.school_id,
+    )
+    finance_summary = await get_finance_summary_for_students(db, students=finance_scope.students)
 
     return templates.TemplateResponse("dashboard/admin.html", {
         "request": request,
@@ -181,6 +191,7 @@ async def school_admin_dashboard(request: Request, db, current_user: User):
         "recent_notifications": notifs.scalars().all(),
         "teachers": teachers,
         "students": students,
+        "pending_fee_count": finance_summary["pending_count"],
     })
 
 
@@ -221,12 +232,15 @@ async def teacher_dashboard(request: Request, db, current_user: User):
         .order_by(Notification.created_at.desc())
         .limit(5)
     )
+    finance_scope = await get_finance_scope(db, acting_user=current_user)
+    finance_summary = await get_finance_summary_for_students(db, students=finance_scope.students)
 
     return templates.TemplateResponse("dashboard/teacher.html", {
         "request": request,
         "user": current_user,
         "classes": class_attendance,
         "recent_notifications": notifs.scalars().all(),
+        "pending_fee_count": finance_summary["pending_count"],
     })
 
 

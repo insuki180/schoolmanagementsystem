@@ -23,7 +23,12 @@
     </div>
     {% endif %}
 
-    <div class="grid lg:grid-cols-3 gap-6">
+    <div class="flex flex-wrap gap-2">
+        <button type="button" class="btn-secondary" data-student-tab="profile">Profile</button>
+        <button type="button" class="btn-ghost" data-student-tab="fees">Fees</button>
+    </div>
+
+    <div id="student-tab-profile" class="grid lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
             <section class="detail-card">
                 <h2 class="detail-card-title">Student Info</h2>
@@ -138,5 +143,117 @@
             </section>
         </div>
     </div>
+
+    <div id="student-tab-fees" class="hidden space-y-6">
+        <div class="grid sm:grid-cols-3 gap-4">
+            <div class="detail-stat">
+                <p class="detail-label">Monthly Fee</p>
+                <p class="detail-value">Rs. {{ "%.2f"|format(finance_details.monthly_fee) }}</p>
+            </div>
+            <div class="detail-stat">
+                <p class="detail-label">Current Status</p>
+                <p class="detail-value">{{ finance_details.current_status }}</p>
+            </div>
+            <div class="detail-stat">
+                <p class="detail-label">Current Due</p>
+                <p class="detail-value">Rs. {{ "%.2f"|format(finance_details.current_due) }}</p>
+            </div>
+        </div>
+
+        <section class="detail-card">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <h2 class="detail-card-title !mb-0">Payment History</h2>
+                {% if user.role.value in ['school_admin', 'super_admin'] %}
+                <a href="/finance/students?class_id={{ student.class_id }}" class="btn-secondary">Manage Fees</a>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="w-full">
+                    <thead>
+                        <tr style="background:var(--color-bg)">
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Date</th>
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Amount</th>
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Mode</th>
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Note</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y" style="border-color:var(--color-border-light)">
+                        {% for entry in finance_details.ledger %}
+                        <tr>
+                            <td class="px-4 py-3 text-sm" style="color:var(--color-text-secondary)">{{ entry.payment_date }}</td>
+                            <td class="px-4 py-3 text-sm font-medium" style="color:var(--color-text)">Rs. {{ "%.2f"|format(entry.amount_paid) }}</td>
+                            <td class="px-4 py-3 text-sm" style="color:var(--color-text-secondary)">{{ entry.payment_mode }}</td>
+                            <td class="px-4 py-3 text-sm" style="color:var(--color-text-secondary)">{{ entry.note or "—" }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-4 py-6 text-center text-sm" style="color:var(--color-text-muted)">No payments recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="detail-card">
+            <h2 class="detail-card-title">Monthly Breakdown</h2>
+            <div class="table-responsive">
+                <table class="w-full">
+                    <thead>
+                        <tr style="background:var(--color-bg)">
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Month</th>
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Fee</th>
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Paid</th>
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Due</th>
+                            <th class="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y" style="border-color:var(--color-border-light)">
+                        {% for row in finance_details.breakdown %}
+                        <tr {% if row.status in ['DUE', 'PARTIAL'] %}class="bg-red-50/40 dark:bg-red-900/10"{% endif %}>
+                            <td class="px-4 py-3 text-sm" style="color:var(--color-text-secondary)">{{ row.month }}</td>
+                            <td class="px-4 py-3 text-sm font-medium" style="color:var(--color-text)">Rs. {{ "%.2f"|format(row.amount_due) }}</td>
+                            <td class="px-4 py-3 text-sm" style="color:var(--color-text-secondary)">Rs. {{ "%.2f"|format(row.amount_paid) }}</td>
+                            <td class="px-4 py-3 text-sm" style="color:var(--color-text-secondary)">Rs. {{ "%.2f"|format(row.balance) }}</td>
+                            <td class="px-4 py-3 text-sm font-semibold" style="color:var(--color-text)">{{ row.status }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-6 text-center text-sm" style="color:var(--color-text-muted)">No fee configuration found for this student.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
 </div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(() => {
+  const tabs = document.querySelectorAll("[data-student-tab]");
+  const profilePanel = document.getElementById("student-tab-profile");
+  const feesPanel = document.getElementById("student-tab-fees");
+
+  if (!tabs.length || !profilePanel || !feesPanel) return;
+
+  const setActive = (tab) => {
+    const showingFees = tab === "fees";
+    profilePanel.classList.toggle("hidden", showingFees);
+    feesPanel.classList.toggle("hidden", !showingFees);
+    tabs.forEach(button => {
+      const active = button.dataset.studentTab === tab;
+      button.classList.toggle("btn-secondary", active);
+      button.classList.toggle("btn-ghost", !active);
+    });
+  };
+
+  tabs.forEach(button => {
+    button.addEventListener("click", () => setActive(button.dataset.studentTab));
+  });
+
+  setActive("profile");
+})();
+</script>
 {% endblock %}

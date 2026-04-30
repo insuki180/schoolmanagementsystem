@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Student Fees — SchoolMS{% endblock %}
+{% block page_title %}Student Fees{% endblock %}
+{% block content %}
+<div class="fade-in space-y-6">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+    <div>
+      <p class="text-sm" style="color:var(--color-text-muted)">Review fee setup, monthly status, and ledger-backed dues for every student in scope.</p>
+    </div>
+    <form method="GET" action="/finance/students" class="flex flex-wrap gap-3">
+      {% if user.role.value == 'super_admin' %}
+      <select name="school_id" class="input-field">
+        <option value="">All Schools</option>
+        {% for school in schools %}
+        <option value="{{ school.id }}" {% if selected_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      <select name="class_id" class="input-field">
+        <option value="">All Classes</option>
+        {% for class_ in classes %}
+        <option value="{{ class_.id }}" {% if selected_class_id == class_.id %}selected{% endif %}>{{ class_.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="month" name="month" value="{{ selected_month or '' }}" class="input-field">
+      <button type="submit" class="btn-primary">Load</button>
+    </form>
+  </div>
+
+  <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="px-6 py-4 border-b" style="border-color:var(--color-border)">
+      <h2 class="font-semibold text-base" style="color:var(--color-text)">Student Fee Table</h2>
+    </div>
+    <div class="table-responsive">
+      <table class="w-full">
+        <thead>
+          <tr style="background:var(--color-bg)">
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Student</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Monthly Fee</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Paid</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Due</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Status</th>
+            <th class="text-right px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y" style="border-color:var(--color-border-light)">
+          {% for row in rows %}
+          <tr {% if row.status in ['DUE', 'PARTIAL'] %}class="bg-red-50/40 dark:bg-red-900/10"{% endif %}>
+            <td class="px-6 py-4">
+              <p class="font-medium text-sm" style="color:var(--color-text)">{{ row.student.name }}</p>
+              <p class="text-xs mt-0.5" style="color:var(--color-text-muted)">{{ row.student.class_.name if row.student.class_ else "N/A" }}</p>
+            </td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">Rs. {{ "%.2f"|format(row.monthly_fee) }}</td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">Rs. {{ "%.2f"|format(row.paid) }}</td>
+            <td class="px-6 py-4 text-sm font-semibold {% if row.due > 0 %}text-red-600 dark:text-red-400{% endif %}">Rs. {{ "%.2f"|format(row.due) }}</td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
+                {% if row.status == 'PAID' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+                {% elif row.status == 'ADVANCE' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                {% elif row.status == 'PARTIAL' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+                {% elif row.status == 'DUE' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                {{ row.status }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <div class="flex items-center justify-end gap-2">
+                <a href="/students/{{ row.student.id }}/details" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 hover:bg-sky-100 dark:bg-sky-900/20 dark:text-sky-400 dark:hover:bg-sky-800/40 transition-colors">
+                  View
+                </a>
+                {% if can_configure_fees %}
+                <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-800/40 transition-colors" onclick="openFeeConfig({{ row.student.id }}, '{{ row.student.name|escape }}', {{ row.monthly_fee or 0 }})">
+                  Set Fee
+                </button>
+                {% endif %}
+                {% if can_add_payments %}
+                <button type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-800/40 transition-colors" onclick="openPaymentModal({{ row.student.id }}, '{{ row.student.name|escape }}')">
+                  Add Payment
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="px-6 py-10 text-center text-sm" style="color:var(--color-text-muted)">No students found for the selected filters.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="payment-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-950/40 px-4">
+    <div class="w-full max-w-md rounded-2xl border shadow-xl p-6 space-y-4" style="background:var(--color-surface);border-color:var(--color-border)">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="font-semibold text-lg" style="color:var(--color-text)">Record Payment</h3>
+          <p id="payment-modal-student" class="text-sm mt-1" style="color:var(--color-text-muted)"></p>
+        </div>
+        <button type="button" onclick="closeModal('payment-modal')" class="text-sm font-semibold" style="color:var(--color-text-muted)">Close</button>
+      </div>
+      <form id="payment-form" class="space-y-4">
+        <input type="hidden" id="payment-student-id">
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">Amount</label>
+          <input id="payment-amount" type="number" step="0.01" min="0" class="input-field" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">Payment Date</label>
+          <input id="payment-date" type="date" class="input-field" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">Mode</label>
+          <select id="payment-mode" class="input-field" required>
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="upi">UPI</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">Note</label>
+          <textarea id="payment-note" class="input-field" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn-primary w-full">Submit Payment</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="fee-config-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-950/40 px-4">
+    <div class="w-full max-w-md rounded-2xl border shadow-xl p-6 space-y-4" style="background:var(--color-surface);border-color:var(--color-border)">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="font-semibold text-lg" style="color:var(--color-text)">Set Monthly Fee</h3>
+          <p id="fee-config-student" class="text-sm mt-1" style="color:var(--color-text-muted)"></p>
+        </div>
+        <button type="button" onclick="closeModal('fee-config-modal')" class="text-sm font-semibold" style="color:var(--color-text-muted)">Close</button>
+      </div>
+      <form id="fee-config-form" class="space-y-4">
+        <input type="hidden" id="fee-config-student-id">
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">Monthly Fee</label>
+          <input id="fee-config-amount" type="number" step="0.01" min="0" class="input-field" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1.5" style="color:var(--color-text-secondary)">Effective From</label>
+          <input id="fee-config-date" type="date" class="input-field" required>
+        </div>
+        <button type="submit" class="btn-primary w-full">Save Fee</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function openPaymentModal(studentId, studentName) {
+  document.getElementById("payment-student-id").value = studentId;
+  document.getElementById("payment-modal-student").textContent = studentName;
+  document.getElementById("payment-date").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("payment-modal").classList.remove("hidden");
+  document.getElementById("payment-modal").classList.add("flex");
+}
+
+function openFeeConfig(studentId, studentName, monthlyFee) {
+  document.getElementById("fee-config-student-id").value = studentId;
+  document.getElementById("fee-config-student").textContent = studentName;
+  document.getElementById("fee-config-amount").value = monthlyFee || "";
+  document.getElementById("fee-config-date").value = new Date().toISOString().slice(0, 10);
+  document.getElementById("fee-config-modal").classList.remove("hidden");
+  document.getElementById("fee-config-modal").classList.add("flex");
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  modal.classList.add("hidden");
+  modal.classList.remove("flex");
+}
+
+document.getElementById("payment-form")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const payload = {
+    student_id: Number(document.getElementById("payment-student-id").value),
+    amount_paid: Number(document.getElementById("payment-amount").value),
+    payment_date: document.getElementById("payment-date").value,
+    payment_mode: document.getElementById("payment-mode").value,
+    note: document.getElementById("payment-note").value
+  };
+
+  const response = await fetch("/finance/payment", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    window.Toast?.error("Payment failed", data.detail || "Unable to save payment.");
+    return;
+  }
+  window.location.reload();
+});
+
+document.getElementById("fee-config-form")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const payload = {
+    student_id: Number(document.getElementById("fee-config-student-id").value),
+    monthly_fee: Number(document.getElementById("fee-config-amount").value),
+    effective_from: document.getElementById("fee-config-date").value,
+    status: "active"
+  };
+
+  const response = await fetch("/finance/config", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    window.Toast?.error("Fee update failed", data.detail || "Unable to save fee configuration.");
+    return;
+  }
+  window.location.reload();
+});
+</script>
+{% endblock %}

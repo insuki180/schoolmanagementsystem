@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import logging
 from sqlalchemy import text
 from app.database import engine, Base
-from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports, students, logs
+from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports, students, logs, finance
 
 
 # Configure basic logging
@@ -155,6 +155,38 @@ async def ensure_audit_log_schema(engine):
         logger.warning("Could not verify audit log schema: %s", exc)
 
 
+async def ensure_finance_schema(engine):
+    """Keep finance tables compatible on existing deployments."""
+    statements = [
+        (
+            "CREATE TABLE IF NOT EXISTS student_fee_configs ("
+            "id SERIAL PRIMARY KEY, "
+            "student_id INTEGER NOT NULL REFERENCES students(id), "
+            "monthly_fee DOUBLE PRECISION NOT NULL, "
+            "effective_from DATE NOT NULL, "
+            "status VARCHAR(20) NOT NULL DEFAULT 'active', "
+            "created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS fee_ledger ("
+            "id SERIAL PRIMARY KEY, "
+            "student_id INTEGER NOT NULL REFERENCES students(id), "
+            "amount_paid DOUBLE PRECISION NOT NULL, "
+            "payment_date DATE NOT NULL, "
+            "payment_mode VARCHAR(50) NOT NULL, "
+            "note VARCHAR(500) NULL, "
+            "created_by INTEGER NOT NULL REFERENCES users(id), "
+            "created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+        ),
+    ]
+    try:
+        async with engine.begin() as conn:
+            for statement in statements:
+                await conn.execute(text(statement))
+    except Exception as exc:
+        logger.warning("Could not verify finance schema: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -165,6 +197,7 @@ async def lifespan(app: FastAPI):
     await ensure_notification_student_target_schema(engine)
     await ensure_temp_password_schema(engine)
     await ensure_audit_log_schema(engine)
+    await ensure_finance_schema(engine)
     yield
     # Shutdown
     await engine.dispose()
@@ -199,6 +232,7 @@ app.include_router(classes.router)
 app.include_router(student_imports.router)
 app.include_router(students.router)
 app.include_router(logs.router)
+app.include_router(finance.router)
 
 
 @app.exception_handler(Exception)

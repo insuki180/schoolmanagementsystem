@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Finance Dashboard — SchoolMS{% endblock %}
+{% block page_title %}Finance Dashboard{% endblock %}
+{% block content %}
+<div class="fade-in space-y-6">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+    <div>
+      <p class="text-sm" style="color:var(--color-text-muted)">Monitor fee collection health, pending dues, and monthly finance progress.</p>
+    </div>
+    <form method="GET" action="/finance" class="flex flex-wrap gap-3">
+      {% if user.role.value == 'super_admin' %}
+      <select name="school_id" class="input-field">
+        <option value="">All Schools</option>
+        {% for school in schools %}
+        <option value="{{ school.id }}" {% if selected_school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+      <select name="class_id" class="input-field">
+        <option value="">All Classes</option>
+        {% for class_ in classes %}
+        <option value="{{ class_.id }}" {% if selected_class_id == class_.id %}selected{% endif %}>{{ class_.name }}</option>
+        {% endfor %}
+      </select>
+      <input type="month" name="month" value="{{ selected_month or '' }}" class="input-field">
+      <button type="submit" class="btn-primary">Load</button>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm font-medium" style="color:var(--color-text-muted)">Total Expected</p>
+      <p class="text-3xl font-bold mt-3" style="color:var(--color-text)">Rs. {{ "%.2f"|format(summary.total_expected) }}</p>
+    </div>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm font-medium" style="color:var(--color-text-muted)">Collected</p>
+      <p class="text-3xl font-bold mt-3 text-emerald-600 dark:text-emerald-400">Rs. {{ "%.2f"|format(summary.total_collected) }}</p>
+    </div>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm font-medium" style="color:var(--color-text-muted)">Pending</p>
+      <p class="text-3xl font-bold mt-3 text-amber-600 dark:text-amber-400">Rs. {{ "%.2f"|format(summary.total_pending) }}</p>
+      <p class="text-xs mt-2" style="color:var(--color-text-muted)">Pending Fees: {{ summary.pending_count }} students</p>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+    <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border)">
+      <h2 class="font-semibold text-base" style="color:var(--color-text)">Students With Dues</h2>
+      <a href="/finance/students" class="text-xs font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400">Open student fees →</a>
+    </div>
+    <div class="table-responsive">
+      <table class="w-full">
+        <thead>
+          <tr style="background:var(--color-bg)">
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Student</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Class</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Monthly Fee</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Paid</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Due</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y" style="border-color:var(--color-border-light)">
+          {% for row in pending_rows %}
+          <tr class="bg-red-50/40 dark:bg-red-900/10">
+            <td class="px-6 py-4">
+              <p class="font-medium text-sm" style="color:var(--color-text)">{{ row.student.name }}</p>
+              <p class="text-xs mt-0.5" style="color:var(--color-text-muted)">{{ row.student.parent.name if row.student.parent else "Parent unavailable" }}</p>
+            </td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">{{ row.student.class_.name if row.student.class_ else "N/A" }}</td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">Rs. {{ "%.2f"|format(row.monthly_fee) }}</td>
+            <td class="px-6 py-4 text-sm" style="color:var(--color-text-secondary)">Rs. {{ "%.2f"|format(row.paid) }}</td>
+            <td class="px-6 py-4 text-sm font-semibold text-red-600 dark:text-red-400">Rs. {{ "%.2f"|format(row.due) }}</td>
+            <td class="px-6 py-4 text-sm font-semibold" style="color:var(--color-text)">{{ row.status }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="px-6 py-10 text-center text-sm" style="color:var(--color-text-muted)">No pending fees for the selected scope.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

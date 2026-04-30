@@ -11,6 +11,7 @@ from app.models.notification import Notification, notification_classes
 from app.models.mark import Mark
 from app.models.absence_response import AbsenceResponse
 from app.models.audit_log import AuditLog
+from app.models.finance import FeeLedger, StudentFeeConfig
 
 __all__ = [
     "School",
@@ -27,4 +28,6 @@ __all__ = [
     "Mark",
     "AbsenceResponse",
     "AuditLog",
+    "StudentFeeConfig",
+    "FeeLedger",
 ]

@@ -103,8 +103,11 @@
 <script>
 function toggleSidebar() {
   const sidebar = document.getElementById("sidebar");
-  if (!sidebar || window.innerWidth >= 768) return;
-
+  if (!sidebar) return;
+  if (window.SidebarLayout) {
+    window.SidebarLayout.toggle();
+    return;
+  }
   sidebar.classList.toggle("is-open");
 }
 </script>

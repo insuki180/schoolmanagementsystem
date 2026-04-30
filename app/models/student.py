@@ -30,6 +30,18 @@ class Student(Base):
     attendance_records = relationship("Attendance", back_populates="student", lazy="selectin")
     marks = relationship("Mark", back_populates="student", lazy="selectin")
     absence_responses = relationship("AbsenceResponse", back_populates="student", lazy="selectin")
+    fee_configs = relationship(
+        "StudentFeeConfig",
+        back_populates="student",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    fee_ledger_entries = relationship(
+        "FeeLedger",
+        back_populates="student",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def __repr__(self):
         return f"<Student(id={self.id}, name='{self.name}')>"
