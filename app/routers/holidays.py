@@ -55,8 +55,8 @@ async def create_holiday(
 @router.get("")
 async def get_holidays(
     school_id: int,
-    class_id: int | None = None,
     db: DBSession,
+    class_id: int | None = None,
     current_user: User = Depends(get_current_user),
 ):
     if current_user.role == UserRole.PARENT and class_id is None:
