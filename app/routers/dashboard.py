@@ -8,6 +8,7 @@ from app.dependencies import DBSession, get_current_user
 from app.models.user import User, UserRole
 from app.models.school import School
 from app.models.class_ import Class
+from app.models.finance import FeeLedger, StudentFee
 from app.models.student import Student
 from app.models.attendance import Attendance
 from app.models.notification import Notification
@@ -21,6 +22,7 @@ from app.services.parent_portal_service import (
     update_student_profile,
 )
 from app.services.permissions import can_view_student
+from app.services.smart_alert import get_consecutive_absence_alerts
 from datetime import date
 
 router = APIRouter(tags=["dashboard"])
@@ -47,7 +49,7 @@ async def dashboard(
         return await super_admin_dashboard(request, db, current_user)
     elif role == "school_admin":
         return await school_admin_dashboard(request, db, current_user)
-    elif role == "teacher":
+    elif role in {"teacher", "class_teacher"}:
         return await teacher_dashboard(request, db, current_user)
     elif role == "parent":
         return await parent_dashboard(request, db, current_user)
@@ -55,6 +57,50 @@ async def dashboard(
     return templates.TemplateResponse("auth/login.html", {
         "request": request, "error": "Unknown role"
     })
+
+
+@router.get("/dashboard/admin")
+async def admin_dashboard_summary(
+    db: DBSession,
+    school_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role not in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN):
+        raise HTTPException(status_code=403, detail="You don't have permission to access this resource.")
+
+    effective_school_id = current_user.school_id if current_user.role == UserRole.SCHOOL_ADMIN else school_id
+    if current_user.role == UserRole.SUPER_ADMIN and effective_school_id is None:
+        raise HTTPException(status_code=400, detail="school_id is required for super admin summaries.")
+
+    total_students_result = await db.execute(
+        select(func.count(Student.id)).where(Student.school_id == effective_school_id)
+    )
+    total_due_fees_result = await db.execute(
+        select(func.coalesce(func.sum(StudentFee.amount_due - StudentFee.amount_paid), 0.0))
+        .join(Student, Student.id == StudentFee.student_id)
+        .where(Student.school_id == effective_school_id, StudentFee.status.in_(["DUE", "PARTIAL"]))
+    )
+    today = date.today()
+    month_start = date(today.year, today.month, 1)
+    total_collected_result = await db.execute(
+        select(func.coalesce(func.sum(FeeLedger.amount_paid), 0.0))
+        .join(Student, Student.id == FeeLedger.student_id)
+        .where(Student.school_id == effective_school_id, FeeLedger.payment_date >= month_start, FeeLedger.payment_date <= today)
+    )
+    absent_today_result = await db.execute(
+        select(func.count(Attendance.id))
+        .join(Student, Student.id == Attendance.student_id)
+        .where(Student.school_id == effective_school_id, Attendance.date == today, Attendance.is_present == False)
+    )
+    absence_alerts = await get_consecutive_absence_alerts(db, school_id=effective_school_id)
+
+    return {
+        "total_students": total_students_result.scalar() or 0,
+        "total_due_fees": float(total_due_fees_result.scalar() or 0.0),
+        "total_collected_this_month": float(total_collected_result.scalar() or 0.0),
+        "absent_today_count": absent_today_result.scalar() or 0,
+        "3_day_absence_alerts_count": len(absence_alerts),
+    }
 
 
 async def super_admin_dashboard(request: Request, db, current_user: User):
@@ -160,7 +206,7 @@ async def school_admin_dashboard(request: Request, db, current_user: User):
         select(User)
         .where(
             User.school_id == current_user.school_id,
-            User.role == UserRole.TEACHER,
+            User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]),
         )
         .order_by(User.name)
     )
@@ -197,15 +243,8 @@ async def school_admin_dashboard(request: Request, db, current_user: User):
 
 async def teacher_dashboard(request: Request, db, current_user: User):
     """Teacher: quick actions + class summary."""
-    # Get assigned classes
-    from app.models.class_ import teacher_classes
-    result = await db.execute(
-        select(Class)
-        .join(teacher_classes, teacher_classes.c.class_id == Class.id)
-        .where(teacher_classes.c.teacher_id == current_user.id)
-        .order_by(Class.name)
-    )
-    classes = result.scalars().all()
+    from app.services.permissions import get_allowed_classes
+    classes = await get_allowed_classes(db, current_user, school_id=current_user.school_id)
 
     # Today's attendance status
     today = date.today()
@@ -234,6 +273,11 @@ async def teacher_dashboard(request: Request, db, current_user: User):
     )
     finance_scope = await get_finance_scope(db, acting_user=current_user)
     finance_summary = await get_finance_summary_for_students(db, students=finance_scope.students)
+    absence_alerts = await get_consecutive_absence_alerts(
+        db,
+        class_ids=[item["class"].id for item in class_attendance],
+        school_id=current_user.school_id,
+    )
 
     return templates.TemplateResponse("dashboard/teacher.html", {
         "request": request,
@@ -241,6 +285,7 @@ async def teacher_dashboard(request: Request, db, current_user: User):
         "classes": class_attendance,
         "recent_notifications": notifs.scalars().all(),
         "pending_fee_count": finance_summary["pending_count"],
+        "consecutive_absence_alerts": absence_alerts,
     })
 
 

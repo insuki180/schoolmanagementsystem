@@ -40,6 +40,24 @@ class Class(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    fee_structures = relationship(
+        "FeeStructure",
+        back_populates="class_",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    student_fees = relationship(
+        "StudentFee",
+        back_populates="class_",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    timetable_slots = relationship(
+        "TimetableSlot",
+        back_populates="class_",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def __repr__(self):
         return f"<Class(id={self.id}, name='{self.name}')>"

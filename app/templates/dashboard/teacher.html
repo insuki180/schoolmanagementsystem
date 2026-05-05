@@ -61,6 +61,33 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {% if consecutive_absence_alerts %}
+    <div class="lg:col-span-3 rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:#f59e0b">
+      <div class="flex items-center gap-2 mb-3">
+        <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008Zm8.25-.75L13.5 4.5c-.577-1-1.923-1-2.5 0L4.25 15.75c-.577 1 .145 2.25 1.25 2.25h13.5c1.105 0 1.827-1.25 1.25-2.25Z" />
+        </svg>
+        <h2 class="font-semibold text-base" style="color:var(--color-text)">3-Day Absence Alerts</h2>
+      </div>
+      <div class="grid gap-3 md:grid-cols-2">
+        {% for alert in consecutive_absence_alerts %}
+        <div class="rounded-xl border p-4" style="border-color:var(--color-border);background:var(--color-bg)">
+          <p class="font-semibold text-sm" style="color:var(--color-text)">{{ alert.student_name }}</p>
+          <p class="text-xs mt-1" style="color:var(--color-text-muted)">{{ alert.class_name }} • {{ alert.streak_length }} consecutive absences</p>
+          <p class="text-xs mt-2" style="color:var(--color-text-secondary)">Latest absence: {{ alert.latest_absence_date.isoformat() }}</p>
+          {% if alert.whatsapp_link %}
+          <a href="{{ alert.whatsapp_link }}?text=Your%20child%20has%20been%20absent%20for%203%20consecutive%20days.%20Please%20respond."
+             target="_blank"
+             rel="noopener noreferrer"
+             class="inline-flex items-center mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400">
+            Send WhatsApp
+          </a>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
     <!-- My Classes List -->
     <div class="lg:col-span-2 rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">

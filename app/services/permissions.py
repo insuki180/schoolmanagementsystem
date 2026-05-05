@@ -36,6 +36,14 @@ def is_teacher(user: User) -> bool:
     return _role_value(user) == UserRole.TEACHER.value
 
 
+def is_class_teacher(user: User) -> bool:
+    return _role_value(user) == UserRole.CLASS_TEACHER.value
+
+
+def is_teacher_like(user: User) -> bool:
+    return is_teacher(user) or is_class_teacher(user)
+
+
 def is_parent(user: User) -> bool:
     return _role_value(user) == UserRole.PARENT.value
 
@@ -112,7 +120,7 @@ async def get_allowed_classes(
             query = query.where(Class.school_id == school_id)
     elif is_school_admin(user):
         query = select(Class).where(Class.school_id == user.school_id).order_by(Class.name)
-    elif is_teacher(user):
+    elif is_teacher_like(user):
         query = (
             select(Class)
             .where(
@@ -153,7 +161,7 @@ async def get_allowed_subjects_for_class(db: AsyncSession, user: User, class_id:
         result = await db.execute(query)
         return list(result.scalars().all())
 
-    if not is_teacher(user):
+    if not is_teacher_like(user):
         return []
 
     if class_.class_teacher_id == user.id:
@@ -190,7 +198,7 @@ async def can_edit_marks(user: User, db: AsyncSession, class_id: int, subject_id
         return True
     if is_school_admin(user):
         return class_.school_id == user.school_id
-    if not is_teacher(user):
+    if not is_teacher_like(user):
         return False
     if class_.school_id != user.school_id:
         return False
@@ -237,7 +245,7 @@ async def can_view_student(user: User, db: AsyncSession, student_id: int) -> boo
         return student.school_id == user.school_id
     if is_parent(user):
         return student.parent_id == user.id
-    if not is_teacher(user) or class_.school_id != user.school_id:
+    if not is_teacher_like(user) or class_.school_id != user.school_id:
         return False
     if class_.class_teacher_id == user.id:
         return True

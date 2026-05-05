@@ -125,7 +125,10 @@ async def get_users_by_school(db: AsyncSession, school_id: int, role: UserRole |
     """Get all users for a school, optionally filtered by role."""
     query = select(User).where(User.school_id == school_id)
     if role:
-        query = query.where(User.role == role)
+        if role == UserRole.TEACHER:
+            query = query.where(User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]))
+        else:
+            query = query.where(User.role == role)
     query = query.order_by(User.name)
     result = await db.execute(query)
     return list(result.scalars().all())
@@ -147,7 +150,7 @@ async def reset_user_password(
     elif acting_user.role == UserRole.SCHOOL_ADMIN:
         if target_user.school_id != acting_user.school_id:
             raise HTTPException(status_code=403, detail="You cannot reset passwords outside your school.")
-        if target_user.role not in {UserRole.TEACHER, UserRole.PARENT}:
+        if target_user.role not in {UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.PARENT}:
             raise HTTPException(status_code=403, detail="You can only reset teacher and parent passwords.")
     else:
         raise HTTPException(status_code=403, detail="You do not have permission to reset passwords.")
@@ -173,7 +176,7 @@ async def update_teacher_profile(
         raise HTTPException(status_code=403, detail="Only school admins can update teachers.")
 
     teacher = await get_user_by_id(db, teacher_id)
-    if not teacher or teacher.role != UserRole.TEACHER:
+    if not teacher or teacher.role not in (UserRole.TEACHER, UserRole.CLASS_TEACHER):
         raise HTTPException(status_code=404, detail="Teacher not found.")
     if teacher.school_id != acting_user.school_id:
         raise HTTPException(status_code=403, detail="You cannot update teachers outside your school.")

@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import logging
 from sqlalchemy import text
 from app.database import engine, Base
-from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports, students, logs, finance
+from app.routers import auth, dashboard, schools, users, attendance, notifications, exams, marks, classes, student_imports, students, logs, finance, timetable, holidays
 
 
 # Configure basic logging
@@ -187,6 +187,87 @@ async def ensure_finance_schema(engine):
         logger.warning("Could not verify finance schema: %s", exc)
 
 
+async def ensure_extended_school_schema(engine):
+    """Keep extension tables compatible on existing deployments."""
+    statements = [
+        (
+            "CREATE TABLE IF NOT EXISTS fee_structures ("
+            "id SERIAL PRIMARY KEY, "
+            "class_id INTEGER NOT NULL REFERENCES classes(id), "
+            "fee_type VARCHAR(20) NOT NULL, "
+            "amount DOUBLE PRECISION NOT NULL, "
+            "effective_from DATE NOT NULL, "
+            "created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS student_fees ("
+            "id SERIAL PRIMARY KEY, "
+            "student_id INTEGER NOT NULL REFERENCES students(id), "
+            "class_id INTEGER NOT NULL REFERENCES classes(id), "
+            "period_start DATE NOT NULL, "
+            "period_end DATE NOT NULL, "
+            "fee_type VARCHAR(20) NOT NULL, "
+            "amount_due DOUBLE PRECISION NOT NULL, "
+            "amount_paid DOUBLE PRECISION NOT NULL DEFAULT 0, "
+            "carry_forward DOUBLE PRECISION NOT NULL DEFAULT 0, "
+            "status VARCHAR(20) NOT NULL DEFAULT 'DUE', "
+            "created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS attendance_messages ("
+            "id SERIAL PRIMARY KEY, "
+            "student_id INTEGER NOT NULL REFERENCES students(id), "
+            "attendance_date DATE NOT NULL, "
+            "sender_role VARCHAR(30) NOT NULL, "
+            "message TEXT NOT NULL, "
+            "created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS timetable_slots ("
+            "id SERIAL PRIMARY KEY, "
+            "class_id INTEGER NOT NULL REFERENCES classes(id), "
+            "day_of_week INTEGER NOT NULL, "
+            "period_number INTEGER NOT NULL, "
+            "subject_name VARCHAR(200) NOT NULL, "
+            "teacher_id INTEGER NOT NULL REFERENCES users(id), "
+            "start_time TIME NOT NULL, "
+            "end_time TIME NOT NULL, "
+            "created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+        ),
+        (
+            "CREATE TABLE IF NOT EXISTS holidays ("
+            "id SERIAL PRIMARY KEY, "
+            "school_id INTEGER NOT NULL REFERENCES schools(id), "
+            "class_id INTEGER NULL REFERENCES classes(id), "
+            "date DATE NOT NULL, "
+            "title VARCHAR(200) NOT NULL, "
+            "description TEXT NULL, "
+            "created_by INTEGER NOT NULL REFERENCES users(id), "
+            "created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW())"
+        ),
+        "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)",
+        "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS dedup_key VARCHAR(255)",
+    ]
+    try:
+        async with engine.begin() as conn:
+            for statement in statements:
+                await conn.execute(text(statement))
+            index_statements = [
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_student_fees_student_period_range ON student_fees (student_id, period_start, period_end)",
+                "CREATE INDEX IF NOT EXISTS ix_student_fees_student_status ON student_fees (student_id, status)",
+                "CREATE INDEX IF NOT EXISTS ix_notifications_user_read ON notifications (user_id, is_read)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_notifications_dedup_key ON notifications (dedup_key) WHERE dedup_key IS NOT NULL",
+                "CREATE INDEX IF NOT EXISTS ix_timetable_slots_class_day ON timetable_slots (class_id, day_of_week)",
+                "CREATE INDEX IF NOT EXISTS ix_timetable_slots_teacher_day ON timetable_slots (teacher_id, day_of_week)",
+                "CREATE INDEX IF NOT EXISTS ix_holidays_school_class_date ON holidays (school_id, class_id, date)",
+            ]
+            for statement in index_statements:
+                await conn.execute(text(statement))
+    except Exception as exc:
+        logger.warning("Could not verify extended school schema: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
@@ -198,6 +279,7 @@ async def lifespan(app: FastAPI):
     await ensure_temp_password_schema(engine)
     await ensure_audit_log_schema(engine)
     await ensure_finance_schema(engine)
+    await ensure_extended_school_schema(engine)
     yield
     # Shutdown
     await engine.dispose()
@@ -238,6 +320,9 @@ app.include_router(student_imports.router)
 app.include_router(students.router)
 app.include_router(logs.router)
 app.include_router(finance.router)
+app.include_router(finance.api_router)
+app.include_router(timetable.router)
+app.include_router(holidays.router)
 
 
 @app.exception_handler(Exception)

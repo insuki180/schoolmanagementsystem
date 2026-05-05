@@ -155,6 +155,7 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const attendanceForm = document.querySelector('form[action="/attendance/mark"]');
     const schoolSelect = document.getElementById('attendance-school');
     const classSelect = document.getElementById('attendance-class');
     const classOptions = Array.from(classSelect?.querySelectorAll('option[data-school-id]') || []);
@@ -218,6 +219,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Listen for changes
         cb.addEventListener('change', updateToggleState);
+    });
+
+    attendanceForm?.addEventListener('submit', (event) => {
+        const absentCount = document.querySelectorAll('.absent-checkbox:checked').length;
+        const confirmed = window.confirm(`Confirm attendance submission? ${absentCount} student(s) will be marked absent.`);
+        if (!confirmed) {
+            event.preventDefault();
+        }
     });
 });
 </script>

@@ -126,7 +126,7 @@ async def class_detail(request: Request, class_id: int, db: DBSession,
             select(func.avg(Mark.marks_obtained)).where(Mark.student_id.in_(student_ids)))
         avg_marks = round(float(avg_r.scalar() or 0), 1)
 
-    teacher_query = select(User).where(User.role == UserRole.TEACHER)
+    teacher_query = select(User).where(User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]))
     subject_query = select(Subject)
     if not is_super_admin(current_user):
         teacher_query = teacher_query.where(User.school_id == cls.school_id)
@@ -199,13 +199,15 @@ async def assign_class_teacher(
         teacher_result = await db.execute(
             select(User).where(
                 User.id == class_teacher_id,
-                User.role == UserRole.TEACHER,
+                User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]),
                 User.school_id == cls.school_id,
             )
         )
         teacher = teacher_result.scalar_one_or_none()
         if not teacher:
             raise HTTPException(status_code=404, detail="Teacher not found for this school.")
+        if teacher.role == UserRole.TEACHER:
+            teacher.role = UserRole.CLASS_TEACHER
         cls.class_teacher_id = teacher.id
         if teacher not in cls.teachers:
             cls.teachers.append(teacher)
@@ -238,7 +240,7 @@ async def assign_subject_teacher(
     teacher_result = await db.execute(
         select(User).where(
             User.id == teacher_id,
-            User.role == UserRole.TEACHER,
+            User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]),
             User.school_id == cls.school_id,
         )
     )

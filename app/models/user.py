@@ -10,6 +10,7 @@ from app.database import Base
 class UserRole(str, enum.Enum):
     SUPER_ADMIN = "super_admin"
     SCHOOL_ADMIN = "school_admin"
+    CLASS_TEACHER = "class_teacher"
     TEACHER = "teacher"
     PARENT = "parent"
 
@@ -40,7 +41,8 @@ class User(Base):
     )
     homeroom_classes = relationship("Class", foreign_keys="Class.class_teacher_id", back_populates="class_teacher")
     subject_assignments = relationship("ClassSubject", back_populates="teacher", lazy="selectin")
-    sent_notifications = relationship("Notification", back_populates="sent_by_user", lazy="selectin")
+    sent_notifications = relationship("Notification", back_populates="sent_by_user", foreign_keys="Notification.sent_by", lazy="selectin")
+    received_notifications = relationship("Notification", foreign_keys="Notification.user_id", lazy="selectin", overlaps="recipient_user")
     absence_responses = relationship("AbsenceResponse", back_populates="parent", lazy="selectin")
 
     def __repr__(self):

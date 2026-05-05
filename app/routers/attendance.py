@@ -10,9 +10,12 @@ from sqlalchemy import select
 from app.dependencies import DBSession, get_current_user, require_role
 from app.models.student import Student
 from app.models.user import User, UserRole
+from app.schemas.attendance import AttendanceMessageCreateRequest
 from app.services.attendance_service import (
     bulk_mark_attendance,
+    create_attendance_message,
     get_attendance_history,
+    get_attendance_messages,
     get_today_attendance,
 )
 from app.services.permissions import can_mark_attendance, can_view_student, get_allowed_classes
@@ -36,7 +39,7 @@ async def attendance_page(
     db: DBSession,
     class_id: int | None = None,
     school_id: int | None = None,
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
     school = None
     if school_id is not None or current_user.role != UserRole.SUPER_ADMIN:
@@ -75,7 +78,7 @@ async def attendance_page(
 async def attendance_index(
     school_id: int | None = None,
     class_id: int | None = None,
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
     params: list[str] = []
     if school_id is not None:
@@ -91,7 +94,7 @@ async def attendance_index(
 @router.post("/mark")
 async def mark_attendance(request: Request, db: DBSession,
     class_id: int = Form(...), att_date: str = Form(...), school_id: int | None = Form(None),
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
     school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
     selected_school_id = school.id if school else None
     classes = await get_allowed_classes(db, current_user, school_id=selected_school_id)
@@ -104,7 +107,10 @@ async def mark_attendance(request: Request, db: DBSession,
     form = await request.form()
     absent_ids = [int(v) for k, v in form.multi_items() if k == "absent"]
     parsed_date = date.fromisoformat(att_date)
-    count = await bulk_mark_attendance(db, class_id, parsed_date, absent_ids, current_user.id)
+    try:
+        count = await bulk_mark_attendance(db, class_id, parsed_date, absent_ids, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     # Reload page with success
     students = await get_today_attendance(db, class_id)
@@ -181,3 +187,59 @@ async def attendance_history_with_leaves(
         "pct": pct,
         "absence_rows": absence_history["rows"] if absence_history else [],
     })
+
+
+@router.post("/reply")
+async def attendance_reply(
+    payload: AttendanceMessageCreateRequest,
+    db: DBSession,
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        message = await create_attendance_message(
+            db,
+            student_id=payload.student_id,
+            attendance_date=payload.attendance_date,
+            sender=current_user,
+            message=payload.message,
+        )
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return {
+        "id": message.id,
+        "student_id": message.student_id,
+        "attendance_date": message.attendance_date.isoformat(),
+        "sender_role": message.sender_role,
+        "message": message.message,
+    }
+
+
+@router.get("/messages/{student_id}/{attendance_date}")
+async def attendance_messages(
+    student_id: int,
+    attendance_date: str,
+    db: DBSession,
+    current_user: User = Depends(get_current_user),
+):
+    if not await can_view_student(current_user, db, student_id):
+        raise HTTPException(status_code=403, detail="You do not have permission to view this attendance thread.")
+
+    rows = await get_attendance_messages(
+        db,
+        student_id=student_id,
+        attendance_date=date.fromisoformat(attendance_date),
+    )
+    return [
+        {
+            "id": row.id,
+            "student_id": row.student_id,
+            "attendance_date": row.attendance_date.isoformat(),
+            "sender_role": row.sender_role,
+            "message": row.message,
+            "created_at": row.created_at.isoformat() if row.created_at else None,
+        }
+        for row in rows
+    ]

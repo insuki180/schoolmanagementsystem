@@ -186,7 +186,7 @@ async def edit_teacher_page(
     current_user: User = Depends(require_role(UserRole.SCHOOL_ADMIN)),
 ):
     teacher = await get_user_by_id(db, teacher_id)
-    if not teacher or teacher.role != UserRole.TEACHER:
+    if not teacher or teacher.role not in (UserRole.TEACHER, UserRole.CLASS_TEACHER):
         return RedirectResponse(url="/dashboard?msg=Teacher%20not%20found", status_code=303)
     if teacher.school_id != current_user.school_id:
         return RedirectResponse(url="/dashboard?msg=Access%20denied", status_code=303)
@@ -276,7 +276,7 @@ async def school_admin_update_student(
 
 @router.get("/create-student", response_class=HTMLResponse)
 async def create_student_page(request: Request, db: DBSession,
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
     result = await db.execute(
         select(Class).where(Class.school_id == current_user.school_id).order_by(Class.name))
     return templates.TemplateResponse("students/create.html", {
@@ -290,7 +290,7 @@ async def create_student_action(request: Request, db: DBSession,
     student_name: str = Form(...), class_id: int = Form(...),
     parent_name: str = Form(...), parent_email: str = Form(...),
     parent_phone: str = Form(...),
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
     try:
         student, parent, temp_password = await create_student_and_parent(
             db, student_name, class_id, parent_name, parent_email,

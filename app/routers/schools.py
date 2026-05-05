@@ -33,7 +33,7 @@ def _school_summary_query():
             User.school_id.label("school_id"),
             func.count(User.id).label("total_teachers"),
         )
-        .where(User.role == UserRole.TEACHER)
+        .where(User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]))
         .group_by(User.school_id)
         .subquery()
     )

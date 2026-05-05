@@ -22,6 +22,7 @@ from app.services.absence_response_service import (
     get_visible_absence_responses,
     save_absence_response,
 )
+from app.services.attendance_service import create_attendance_message
 from app.services.permissions import can_view_student, is_parent
 from app.services.school_scope import resolve_school_scope
 
@@ -39,7 +40,7 @@ NOTIFICATION_TEMPLATES = [
 
 @router.get("/send", response_class=HTMLResponse)
 async def send_page(request: Request, db: DBSession,
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
     result = await db.execute(
         select(Class).where(Class.school_id == current_user.school_id).order_by(Class.name))
     return templates.TemplateResponse("notifications/send.html", {
@@ -53,7 +54,7 @@ async def send_page(request: Request, db: DBSession,
 async def send(request: Request, db: DBSession,
     title: str = Form(...), message: str = Form(...),
     is_school_wide: bool = Form(False),
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN))):
     form = await request.form()
     class_ids = [int(v) for k, v in form.multi_items() if k == "class_ids"]
     school_wide = "is_school_wide" in form
@@ -78,7 +79,7 @@ async def send_personal(
     title: str = Form(...),
     message: str = Form(...),
     school_id: int | None = Form(None),
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
     if not await can_view_student(current_user, db, student_id):
         raise HTTPException(status_code=403, detail="You do not have access to this student.")
@@ -223,6 +224,13 @@ async def submit_absence_response(
             message=message,
             leave_days=leave_days or None,
             parent_user=current_user,
+        )
+        await create_attendance_message(
+            db,
+            student_id=student_id,
+            attendance_date=date.fromisoformat(absence_date),
+            sender=current_user,
+            message=message,
         )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc

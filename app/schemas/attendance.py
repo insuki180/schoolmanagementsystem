@@ -19,3 +19,9 @@ class AttendanceRecord(BaseModel):
     created_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+class AttendanceMessageCreateRequest(BaseModel):
+    student_id: int
+    attendance_date: date
+    message: str

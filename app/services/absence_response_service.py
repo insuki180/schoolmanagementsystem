@@ -12,7 +12,7 @@ from app.models.attendance import Attendance
 from app.models.class_ import Class, ClassSubject, teacher_classes
 from app.models.student import Student
 from app.models.user import User
-from app.services.permissions import can_view_student, is_parent, is_school_admin, is_super_admin, is_teacher
+from app.services.permissions import can_view_student, is_parent, is_school_admin, is_super_admin, is_teacher_like
 
 
 async def save_absence_response(
@@ -116,7 +116,7 @@ async def get_visible_absence_responses(
             query = query.where(Student.school_id == school_id)
     elif is_school_admin(viewer):
         query = query.where(Student.school_id == viewer.school_id)
-    elif is_teacher(viewer):
+    elif is_teacher_like(viewer):
         query = query.where(
             Student.school_id == viewer.school_id,
             (

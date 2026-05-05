@@ -42,7 +42,7 @@ async def marks_page(
     subject_id: int | None = None,
     exam_id: int | None = None,
     school_id: int | None = None,
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
     school = None
     if school_id is not None or current_user.role != UserRole.SUPER_ADMIN:
@@ -132,7 +132,7 @@ async def marks_index(
     class_id: int | None = None,
     subject_id: int | None = None,
     exam_id: int | None = None,
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN)),
 ):
     params: list[str] = []
     if school_id is not None:
@@ -152,7 +152,7 @@ async def marks_index(
 @router.post("/entry")
 async def marks_entry(request: Request, db: DBSession,
     class_id: int = Form(...), subject_id: int = Form(...), exam_id: int = Form(...), school_id: int | None = Form(None),
-    current_user: User = Depends(require_role(UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
+    current_user: User = Depends(require_role(UserRole.CLASS_TEACHER, UserRole.TEACHER, UserRole.SCHOOL_ADMIN, UserRole.SUPER_ADMIN))):
     school = await resolve_school_scope(db, current_user, school_id, required_for_super_admin=True)
     selected_school_id = school.id if school else None
     classes = await get_allowed_classes(db, current_user, school_id=selected_school_id)

@@ -7,11 +7,25 @@ from app.models.class_ import Class
 from app.models.student import Student
 
 
+def build_notification_dedup_key(*, student_id: int, reference_date, notification_type: str) -> str:
+    date_value = reference_date.isoformat() if hasattr(reference_date, "isoformat") else str(reference_date)
+    return f"{student_id}:{date_value}:{notification_type}"
+
+
 async def send_notification(
     db: AsyncSession, title: str, message: str, school_id: int,
-    sent_by: int, class_ids: list[int] = None, is_school_wide: bool = False
+    sent_by: int, class_ids: list[int] = None, is_school_wide: bool = False,
+    dedup_key: str | None = None,
 ) -> Notification:
     """Create and send a notification to specific classes or school-wide."""
+    if dedup_key:
+        existing_result = await db.execute(
+            select(Notification).where(Notification.dedup_key == dedup_key)
+        )
+        existing = existing_result.scalar_one_or_none()
+        if existing:
+            return existing
+
     target_classes = []
     if class_ids and not is_school_wide:
         result = await db.execute(
@@ -25,6 +39,7 @@ async def send_notification(
         school_id=school_id,
         sent_by=sent_by,
         is_school_wide=is_school_wide,
+        dedup_key=dedup_key,
         target_classes=target_classes,
     )
     db.add(notification)

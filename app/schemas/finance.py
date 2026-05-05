@@ -18,3 +18,17 @@ class FeePaymentCreateRequest(BaseModel):
     payment_date: date
     payment_mode: str
     note: str | None = None
+
+
+class FeeStructureCreateRequest(BaseModel):
+    class_id: int
+    fee_type: str
+    amount: float = Field(gt=0)
+    effective_from: date
+
+
+class FeeGenerateRequest(BaseModel):
+    class_id: int
+    fee_type: str
+    through_date: date
+    student_id: int | None = None
