@@ -89,6 +89,8 @@ Desktop uses:
 
 The launchpad grid can expand to more columns depending on viewport width.
 
+The brand/logo area should be an interactive home action. Clicking the logo should always return the user to their role-specific dashboard launchpad.
+
 ### Mobile
 
 Mobile uses:
@@ -98,6 +100,8 @@ Mobile uses:
 - a More destination for overflow modules and settings
 
 The bottom tab bar should be role-aware. Only the most important destinations should be promoted into tabs. Everything else stays accessible through More to prevent overload.
+
+On mobile, the logo or brand mark in the top bar should remain tappable and return the user to the role-specific dashboard launchpad without competing with primary bottom-tab navigation.
 
 ## Role Strategy
 
@@ -277,6 +281,7 @@ Recommended verification should include browser checks for:
 - Users land on a card-based launchpad instead of a sidebar-led screen
 - Sidebar is no longer required for authenticated navigation
 - Compact top navigation works across modules
+- Brand/logo click or tap returns the user to the role-specific dashboard launchpad
 - Mobile uses bottom tabs plus More
 - Each role sees the same design system with role-specific priorities
 - The layout can absorb future modules without structural redesign
