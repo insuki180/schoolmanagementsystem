@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, func, case
+from sqlalchemy import select, func, case, cast, String
 from app.dependencies import DBSession, get_current_user
 from app.models.user import User, UserRole
 from app.models.school import School
@@ -33,7 +33,7 @@ def _school_summary_query():
             User.school_id.label("school_id"),
             func.count(User.id).label("total_teachers"),
         )
-        .where(User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]))
+        .where(cast(User.role, String).in_([UserRole.TEACHER.value, UserRole.CLASS_TEACHER.value]))
         .group_by(User.school_id)
         .subquery()
     )

@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, func
+from sqlalchemy import select, func, cast, String
 from sqlalchemy.orm import selectinload
 from app.dependencies import DBSession, require_role, get_current_user
 from app.models.user import User, UserRole
@@ -126,7 +126,7 @@ async def class_detail(request: Request, class_id: int, db: DBSession,
             select(func.avg(Mark.marks_obtained)).where(Mark.student_id.in_(student_ids)))
         avg_marks = round(float(avg_r.scalar() or 0), 1)
 
-    teacher_query = select(User).where(User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]))
+    teacher_query = select(User).where(cast(User.role, String).in_([UserRole.TEACHER.value, UserRole.CLASS_TEACHER.value]))
     subject_query = select(Subject)
     if not is_super_admin(current_user):
         teacher_query = teacher_query.where(User.school_id == cls.school_id)
@@ -199,7 +199,7 @@ async def assign_class_teacher(
         teacher_result = await db.execute(
             select(User).where(
                 User.id == class_teacher_id,
-                User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]),
+                cast(User.role, String).in_([UserRole.TEACHER.value, UserRole.CLASS_TEACHER.value]),
                 User.school_id == cls.school_id,
             )
         )
@@ -240,7 +240,7 @@ async def assign_subject_teacher(
     teacher_result = await db.execute(
         select(User).where(
             User.id == teacher_id,
-            User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]),
+            cast(User.role, String).in_([UserRole.TEACHER.value, UserRole.CLASS_TEACHER.value]),
             User.school_id == cls.school_id,
         )
     )

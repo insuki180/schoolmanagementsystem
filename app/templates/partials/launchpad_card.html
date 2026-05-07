@@ -1,0 +1,17 @@
+{% import "partials/icon.html" as icons %}
+<a href="{{ card.href }}" class="launchpad-card" data-nav-link>
+  <div class="launchpad-card__badge-row">
+    <div class="launchpad-card__icon-wrap">
+      {{ icons.render_icon(card.icon, "launchpad-card__icon") }}
+    </div>
+    {% if card.badge %}
+    <span class="launchpad-card__badge">{{ card.badge }}</span>
+    {% endif %}
+  </div>
+  <div class="launchpad-card__copy">
+    {% if card.eyebrow %}
+    <p class="launchpad-card__eyebrow">{{ card.eyebrow }}</p>
+    {% endif %}
+    <h3 class="launchpad-card__title">{{ card.label }}</h3>
+  </div>
+</a>

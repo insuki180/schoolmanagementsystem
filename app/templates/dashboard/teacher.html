@@ -3,181 +3,81 @@
 {% block page_title %}Teacher Dashboard{% endblock %}
 {% block content %}
 <div class="fade-in space-y-6">
+  <section class="launchpad-hero">
+    <div>
+      <p class="launchpad-hero__eyebrow">Daily Classroom Work</p>
+      <h2 class="launchpad-hero__title">Welcome back, {{ user.name.split()[0] if user.name else 'Teacher' }}</h2>
+      <p class="launchpad-hero__body">Your first screen now acts like a launcher, so attendance, marks, alerts, and class follow-ups stay close on both desktop and mobile.</p>
+    </div>
+    <div class="launchpad-hero__stats">
+      <span class="launchpad-stat">{{ classes|length }} Assigned Classes</span>
+      <span class="launchpad-stat">{{ pending_fee_count }} Pending Fees</span>
+      {% if consecutive_absence_alerts %}
+      <span class="launchpad-stat">{{ consecutive_absence_alerts|length }} Absence Alerts</span>
+      {% endif %}
+    </div>
+  </section>
 
-  <!-- Welcome Header -->
-  <div>
-    <h1 class="text-2xl font-bold" style="color:var(--color-text)">Welcome back, {{ user.name.split()[0] if user.name else 'Teacher' }}! 👋</h1>
-    <p class="text-sm mt-1" style="color:var(--color-text-muted)">Here's your class overview and quick actions for today.</p>
-    <p class="text-xs mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-      Pending Fees: {{ pending_fee_count }} students
-    </p>
-  </div>
+  {% for section in launchpad_sections %}
+    {% include "partials/launchpad_section.html" %}
+  {% endfor %}
 
-  <!-- Quick Action Cards -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-    <a href="/attendance/mark" class="card-hover group relative overflow-hidden rounded-2xl p-5 slide-up" style="background:var(--color-surface);border:1px solid var(--color-border)">
-      <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-4">
-        <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375c0 .621-.504 1.125-1.125 1.125H6.75a1.125 1.125 0 0 1-1.125-1.125V9.375c0-.621.504-1.125 1.125-1.125Z" />
-        </svg>
+  {% if consecutive_absence_alerts %}
+  <section id="teacher-alerts" class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:#f59e0b">
+    <h2 class="font-semibold text-base mb-3" style="color:var(--color-text)">3-Day Absence Alerts</h2>
+    <div class="grid gap-3 md:grid-cols-2">
+      {% for alert in consecutive_absence_alerts %}
+      <div class="rounded-xl border p-4" style="border-color:var(--color-border);background:var(--color-bg)">
+        <p class="font-semibold text-sm" style="color:var(--color-text)">{{ alert.student_name }}</p>
+        <p class="text-xs mt-1" style="color:var(--color-text-muted)">{{ alert.class_name }} • {{ alert.streak_length }} consecutive absences</p>
+        <p class="text-xs mt-2" style="color:var(--color-text-secondary)">Latest absence: {{ alert.latest_absence_date.isoformat() }}</p>
       </div>
-      <p class="font-semibold text-sm" style="color:var(--color-text)">Mark Attendance</p>
-      <p class="text-xs mt-1" style="color:var(--color-text-muted)">Record daily presence</p>
-    </a>
-
-    <a href="/notifications/send" class="card-hover group relative overflow-hidden rounded-2xl p-5 slide-up" style="background:var(--color-surface);border:1px solid var(--color-border);animation-delay:0.1s">
-      <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-4">
-        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-        </svg>
-      </div>
-      <p class="font-semibold text-sm" style="color:var(--color-text)">Send Alert</p>
-      <p class="text-xs mt-1" style="color:var(--color-text-muted)">Notify parents instantly</p>
-    </a>
-
-    <a href="/marks/entry" class="card-hover group relative overflow-hidden rounded-2xl p-5 slide-up" style="background:var(--color-surface);border:1px solid var(--color-border);animation-delay:0.2s">
-      <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div class="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center mb-4">
-        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-        </svg>
-      </div>
-      <p class="font-semibold text-sm" style="color:var(--color-text)">Enter Marks</p>
-      <p class="text-xs mt-1" style="color:var(--color-text-muted)">Record exam results</p>
-    </a>
-
-    <a href="/users/create-student" class="card-hover group relative overflow-hidden rounded-2xl p-5 slide-up" style="background:var(--color-surface);border:1px solid var(--color-border);animation-delay:0.3s">
-      <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center mb-4">
-        <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
-        </svg>
-      </div>
-      <p class="font-semibold text-sm" style="color:var(--color-text)">Create Student + Parent</p>
-      <p class="text-xs mt-1" style="color:var(--color-text-muted)">Register a student and parent login</p>
-    </a>
-  </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {% if consecutive_absence_alerts %}
-    <div class="lg:col-span-3 rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:#f59e0b">
-      <div class="flex items-center gap-2 mb-3">
-        <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008Zm8.25-.75L13.5 4.5c-.577-1-1.923-1-2.5 0L4.25 15.75c-.577 1 .145 2.25 1.25 2.25h13.5c1.105 0 1.827-1.25 1.25-2.25Z" />
-        </svg>
-        <h2 class="font-semibold text-base" style="color:var(--color-text)">3-Day Absence Alerts</h2>
-      </div>
-      <div class="grid gap-3 md:grid-cols-2">
-        {% for alert in consecutive_absence_alerts %}
-        <div class="rounded-xl border p-4" style="border-color:var(--color-border);background:var(--color-bg)">
-          <p class="font-semibold text-sm" style="color:var(--color-text)">{{ alert.student_name }}</p>
-          <p class="text-xs mt-1" style="color:var(--color-text-muted)">{{ alert.class_name }} • {{ alert.streak_length }} consecutive absences</p>
-          <p class="text-xs mt-2" style="color:var(--color-text-secondary)">Latest absence: {{ alert.latest_absence_date.isoformat() }}</p>
-          {% if alert.whatsapp_link %}
-          <a href="{{ alert.whatsapp_link }}?text=Your%20child%20has%20been%20absent%20for%203%20consecutive%20days.%20Please%20respond."
-             target="_blank"
-             rel="noopener noreferrer"
-             class="inline-flex items-center mt-3 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400">
-            Send WhatsApp
-          </a>
-          {% endif %}
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- My Classes List -->
-    <div class="lg:col-span-2 rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
-      <div class="px-6 py-4 border-b flex items-center gap-2" style="border-color:var(--color-border)">
-        <svg class="w-5 h-5" style="color:#6366f1" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
-        </svg>
+    <div id="teacher-classes" class="lg:col-span-2 rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+      <div class="px-6 py-4 border-b" style="border-color:var(--color-border)">
         <h2 class="font-semibold text-base" style="color:var(--color-text)">My Assigned Classes</h2>
       </div>
-
       <div class="divide-y" style="border-color:var(--color-border-light)">
         {% for item in classes %}
-        <div class="px-6 py-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40
-                        flex items-center justify-center flex-shrink-0">
-              <span class="text-sm font-bold text-primary-700 dark:text-primary-300">{{ item.class.name[0]|upper }}</span>
-            </div>
-            <div>
-              <p class="font-medium text-sm" style="color:var(--color-text)">{{ item.class.name }}</p>
-              <p class="text-xs mt-0.5 flex items-center gap-1" style="color:var(--color-text-muted)">
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
-                </svg>
-                {{ item.student_count }} Students
-              </p>
-            </div>
-          </div>
-
+        <div class="px-6 py-4 flex items-center justify-between gap-4">
           <div>
-            {% if item.marked_today %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold
-                         bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/30">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
-              </svg>
-              Marked Today
-            </span>
-            {% else %}
-            <a href="/attendance/mark?class_id={{ item.class.id }}"
-               class="inline-flex items-center px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100
-                      dark:bg-primary-900/30 dark:text-primary-300 dark:hover:bg-primary-800/40 rounded-lg text-xs font-semibold transition-colors">
-              Mark Attendance
-            </a>
-            {% endif %}
+            <p class="font-medium text-sm" style="color:var(--color-text)">{{ item.class.name }}</p>
+            <p class="text-xs mt-1" style="color:var(--color-text-muted)">{{ item.student_count }} Students</p>
           </div>
+          {% if item.marked_today %}
+          <span class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700">Marked Today</span>
+          {% else %}
+          <a href="/attendance/mark?class_id={{ item.class.id }}" class="btn-secondary">Mark Attendance</a>
+          {% endif %}
         </div>
         {% else %}
-        <div class="py-12 text-center">
-          <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center mx-auto mb-3">
-            <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
-            </svg>
-          </div>
-          <p class="text-sm font-medium" style="color:var(--color-text-secondary)">No assigned classes</p>
-          <p class="text-xs mt-1" style="color:var(--color-text-muted)">Contact your admin for assignment.</p>
-        </div>
+        <div class="px-6 py-10 text-center text-sm" style="color:var(--color-text-muted)">No assigned classes</div>
         {% endfor %}
       </div>
     </div>
 
-    <!-- Recent Alerts -->
-    <div class="rounded-2xl border shadow-sm overflow-hidden flex flex-col" style="background:var(--color-surface);border-color:var(--color-border)">
-      <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border)">
-        <h2 class="font-semibold text-base flex items-center gap-2" style="color:var(--color-text)">
-          <svg class="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-          </svg>
-          Recent Activity
-        </h2>
-        <a href="/notifications" class="text-xs font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400">All</a>
+    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+      <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border)">
+        <h2 class="font-semibold text-base" style="color:var(--color-text)">Recent Activity</h2>
+        <a href="/notifications" class="text-xs font-semibold text-primary-600 hover:text-primary-800">All</a>
       </div>
-
-      <div class="divide-y flex-1 overflow-y-auto" style="border-color:var(--color-border-light); max-height: 400px;">
+      <div class="divide-y" style="border-color:var(--color-border-light)">
         {% for notif in recent_notifications %}
-        <div class="px-5 py-3.5">
+        <div class="px-6 py-4">
           <p class="font-medium text-sm leading-tight" style="color:var(--color-text)">{{ notif.title }}</p>
           <p class="text-xs mt-1 line-clamp-2" style="color:var(--color-text-secondary)">{{ notif.message }}</p>
-          <p class="text-[11px] mt-1.5" style="color:var(--color-text-muted)">
-            {{ notif.created_at.strftime('%b %d, %H:%M') if notif.created_at else '' }}
-          </p>
+          <p class="text-[11px] mt-1.5" style="color:var(--color-text-muted)">{{ notif.created_at.strftime('%b %d, %H:%M') if notif.created_at else '' }}</p>
         </div>
         {% else %}
-        <div class="py-12 text-center px-4">
-          <p class="text-sm font-medium" style="color:var(--color-text-muted)">No recent activity</p>
-        </div>
+        <div class="px-6 py-10 text-center text-sm" style="color:var(--color-text-muted)">No recent activity</div>
         {% endfor %}
       </div>
     </div>
-
   </div>
 </div>
 {% endblock %}

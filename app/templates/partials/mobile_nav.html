@@ -1,0 +1,39 @@
+{% import "partials/icon.html" as icons %}
+{% if mobile_tabs is defined and mobile_tabs %}
+<nav class="mobile-nav md:hidden" aria-label="Mobile">
+  {% for item in mobile_tabs %}
+    {% if item.href == "#more-nav" %}
+    <button type="button" class="mobile-nav__item mobile-nav__item--menu" data-menu-toggle="mobile-more-sheet">
+      {{ icons.render_icon(item.icon, "mobile-nav__icon") }}
+      <span class="mobile-nav__label">{{ item.label }}</span>
+    </button>
+    {% else %}
+    <a href="{{ item.href }}" class="mobile-nav__item" data-nav-link>
+      {{ icons.render_icon(item.icon, "mobile-nav__icon") }}
+      <span class="mobile-nav__label">{{ item.label }}</span>
+    </a>
+    {% endif %}
+  {% endfor %}
+</nav>
+
+<div id="mobile-more-sheet" class="mobile-more-sheet hidden md:hidden">
+  <div class="mobile-more-sheet__scrim" data-menu-toggle="mobile-more-sheet"></div>
+  <div class="mobile-more-sheet__panel">
+    <div class="mobile-more-sheet__header">
+      <p class="mobile-more-sheet__title">More</p>
+      <button type="button" class="app-topbar__icon-btn" data-menu-toggle="mobile-more-sheet" aria-label="Close more menu">
+        {{ icons.render_icon("menu", "app-topbar__nav-icon") }}
+      </button>
+    </div>
+    <div class="mobile-more-sheet__links">
+      {% for item in nav_config.top_items + nav_config.more_items %}
+      <a href="{{ item.href }}" class="mobile-more-sheet__link" data-nav-link>
+        {{ icons.render_icon(item.icon, "mobile-nav__icon") }}
+        <span>{{ item.label }}</span>
+      </a>
+      {% endfor %}
+      <a href="/logout" class="mobile-more-sheet__link mobile-more-sheet__link--danger">Logout</a>
+    </div>
+  </div>
+</div>
+{% endif %}

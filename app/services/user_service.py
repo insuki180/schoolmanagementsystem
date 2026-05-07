@@ -5,7 +5,7 @@ import string
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, cast, String
 from app.models.user import User, UserRole
 from app.models.student import Student
 from app.models.class_ import Class
@@ -126,7 +126,7 @@ async def get_users_by_school(db: AsyncSession, school_id: int, role: UserRole |
     query = select(User).where(User.school_id == school_id)
     if role:
         if role == UserRole.TEACHER:
-            query = query.where(User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]))
+            query = query.where(cast(User.role, String).in_([UserRole.TEACHER.value, UserRole.CLASS_TEACHER.value]))
         else:
             query = query.where(User.role == role)
     query = query.order_by(User.name)

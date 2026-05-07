@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Request, Depends, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select, func
+from sqlalchemy import select, func, cast, String
 from app.dependencies import DBSession, get_current_user
 from app.models.user import User, UserRole
 from app.models.school import School
@@ -14,19 +14,58 @@ from app.models.attendance import Attendance
 from app.models.notification import Notification
 from app.models.mark import Mark
 from app.services.notification_service import get_notifications_for_parent
-from app.services.finance_service import get_finance_scope, get_finance_summary_for_students
 from app.services.absence_response_service import get_parent_absence_alerts
 from app.services.parent_portal_service import (
     build_parent_notification_cards,
     get_teacher_contacts_for_student,
     update_student_profile,
 )
+from app.services.navigation_service import build_role_navigation
 from app.services.permissions import can_view_student
 from app.services.smart_alert import get_consecutive_absence_alerts
 from datetime import date
 
 router = APIRouter(tags=["dashboard"])
 templates = Jinja2Templates(directory="app/templates")
+
+
+def _user_role_value(current_user: User) -> str:
+    return current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+
+
+def _base_dashboard_context(request: Request, current_user: User) -> dict:
+    role = _user_role_value(current_user)
+    nav = build_role_navigation(role)
+    return {
+        "request": request,
+        "user": current_user,
+        "role": role,
+        "nav_config": nav,
+        "launchpad_sections": nav["launchpad_sections"],
+        "mobile_tabs": nav["mobile_tabs"],
+        "logo_action": nav["logo_action"],
+    }
+
+
+async def _pending_fee_count(
+    db,
+    *,
+    school_id: int | None = None,
+    class_ids: list[int] | None = None,
+) -> int:
+    stmt = (
+        select(func.count(func.distinct(StudentFee.student_id)))
+        .join(Student, Student.id == StudentFee.student_id)
+        .where(StudentFee.status.in_(["DUE", "PARTIAL"]))
+    )
+    if school_id is not None:
+        stmt = stmt.where(Student.school_id == school_id)
+    if class_ids is not None:
+        if not class_ids:
+            return 0
+        stmt = stmt.where(Student.class_id.in_(class_ids))
+    result = await db.execute(stmt)
+    return result.scalar() or 0
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -43,7 +82,7 @@ async def dashboard(
     current_user: User = Depends(get_current_user),
 ):
     """Render role-appropriate dashboard."""
-    role = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
+    role = _user_role_value(current_user)
 
     if role == "super_admin":
         return await super_admin_dashboard(request, db, current_user)
@@ -124,25 +163,12 @@ async def super_admin_dashboard(request: Request, db, current_user: User):
             "student_count": student_count.scalar() or 0,
         })
 
-    user_result = await db.execute(
-        select(User, School)
-        .outerjoin(School, School.id == User.school_id)
-        .order_by(User.role, User.name)
-    )
-    users = [
-        {"user": user, "school": school}
-        for user, school in user_result.all()
-    ]
-    finance_scope = await get_finance_scope(db, acting_user=current_user)
-    finance_summary = await get_finance_summary_for_students(db, students=finance_scope.students)
-
-    return templates.TemplateResponse("dashboard/super_admin.html", {
-        "request": request,
-        "user": current_user,
+    context = _base_dashboard_context(request, current_user)
+    context.update({
         "school_stats": school_stats,
-        "users": users,
-        "pending_fee_count": finance_summary["pending_count"],
+        "pending_fee_count": await _pending_fee_count(db),
     })
+    return templates.TemplateResponse("dashboard/super_admin.html", context)
 
 
 async def school_admin_dashboard(request: Request, db, current_user: User):
@@ -206,39 +232,20 @@ async def school_admin_dashboard(request: Request, db, current_user: User):
         select(User)
         .where(
             User.school_id == current_user.school_id,
-            User.role.in_([UserRole.TEACHER, UserRole.CLASS_TEACHER]),
+            cast(User.role, String).in_([UserRole.TEACHER.value, UserRole.CLASS_TEACHER.value]),
         )
         .order_by(User.name)
     )
     teachers = list(teacher_result.scalars().all())
 
-    student_result = await db.execute(
-        select(Student, Class, User)
-        .join(Class, Class.id == Student.class_id)
-        .join(User, User.id == Student.parent_id)
-        .where(Student.school_id == current_user.school_id)
-        .order_by(Student.name)
-    )
-    students = [
-        {"student": student, "class": class_, "parent": parent}
-        for student, class_, parent in student_result.all()
-    ]
-    finance_scope = await get_finance_scope(
-        db,
-        acting_user=current_user,
-        school_id=current_user.school_id,
-    )
-    finance_summary = await get_finance_summary_for_students(db, students=finance_scope.students)
-
-    return templates.TemplateResponse("dashboard/admin.html", {
-        "request": request,
-        "user": current_user,
+    context = _base_dashboard_context(request, current_user)
+    context.update({
         "class_stats": class_stats,
         "recent_notifications": notifs.scalars().all(),
         "teachers": teachers,
-        "students": students,
-        "pending_fee_count": finance_summary["pending_count"],
+        "pending_fee_count": await _pending_fee_count(db, school_id=current_user.school_id),
     })
+    return templates.TemplateResponse("dashboard/admin.html", context)
 
 
 async def teacher_dashboard(request: Request, db, current_user: User):
@@ -271,22 +278,24 @@ async def teacher_dashboard(request: Request, db, current_user: User):
         .order_by(Notification.created_at.desc())
         .limit(5)
     )
-    finance_scope = await get_finance_scope(db, acting_user=current_user)
-    finance_summary = await get_finance_summary_for_students(db, students=finance_scope.students)
     absence_alerts = await get_consecutive_absence_alerts(
         db,
         class_ids=[item["class"].id for item in class_attendance],
         school_id=current_user.school_id,
     )
 
-    return templates.TemplateResponse("dashboard/teacher.html", {
-        "request": request,
-        "user": current_user,
+    context = _base_dashboard_context(request, current_user)
+    context.update({
         "classes": class_attendance,
         "recent_notifications": notifs.scalars().all(),
-        "pending_fee_count": finance_summary["pending_count"],
+        "pending_fee_count": await _pending_fee_count(
+            db,
+            school_id=current_user.school_id,
+            class_ids=[item["class"].id for item in class_attendance],
+        ),
         "consecutive_absence_alerts": absence_alerts,
     })
+    return templates.TemplateResponse("dashboard/teacher.html", context)
 
 
 async def parent_dashboard(request: Request, db, current_user: User):
@@ -339,13 +348,13 @@ async def parent_dashboard(request: Request, db, current_user: User):
             student_id=child_data["student"].id,
         )
 
-    return templates.TemplateResponse("dashboard/parent.html", {
-        "request": request,
-        "user": current_user,
+    context = _base_dashboard_context(request, current_user)
+    context.update({
         "children": children_data,
         "notifications": notifications,
         "absence_alerts": absence_alerts,
     })
+    return templates.TemplateResponse("dashboard/parent.html", context)
 
 
 @router.post("/parent/student/update")

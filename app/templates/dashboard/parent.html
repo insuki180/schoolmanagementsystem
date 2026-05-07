@@ -3,10 +3,48 @@
 {% block page_title %}Parent Dashboard{% endblock %}
 {% block content %}
 <div class="fade-in space-y-6">
-  <div>
-    <h1 class="text-2xl font-bold" style="color:var(--color-text)">Parent Dashboard</h1>
-    <p class="text-sm mt-1" style="color:var(--color-text-muted)">Track notifications, update student details, and reach teachers quickly.</p>
-  </div>
+  <section class="launchpad-hero">
+    <div>
+      <p class="launchpad-hero__eyebrow">Family Hub</p>
+      <h2 class="launchpad-hero__title">Keep up with your child from one opening screen</h2>
+      <p class="launchpad-hero__body">The launchpad puts updates first, then keeps student details and teacher contact close without burying them inside a sidebar.</p>
+    </div>
+    <div class="launchpad-hero__stats">
+      <span class="launchpad-stat">{{ children|length }} Linked Children</span>
+      <span class="launchpad-stat">{{ notifications|length }} Updates</span>
+      {% if absence_alerts %}
+      <span class="launchpad-stat">{{ absence_alerts|length }} Absence Notices</span>
+      {% endif %}
+    </div>
+  </section>
+
+  {% for section in launchpad_sections %}
+    {% include "partials/launchpad_section.html" %}
+  {% endfor %}
+
+  <section id="children-overview" class="space-y-3">
+    <div class="launchpad-section__header">
+      <h2 class="launchpad-section__title">Children Overview</h2>
+    </div>
+    {% for child in children %}
+    <article class="launchpad-child-summary">
+      <div>
+        <h3 class="font-semibold text-base" style="color:var(--color-text)">{{ child.student.name }}</h3>
+        <p class="text-sm mt-1" style="color:var(--color-text-muted)">Class: {{ child.class_name }}</p>
+      </div>
+      <div class="launchpad-child-summary__metrics">
+        <span>{{ child.notification_cards|length }} Notices</span>
+        <span>{{ child.attendance|length }} Attendance Rows</span>
+        <span>{{ child.marks|length }} Marks</span>
+      </div>
+    </article>
+    {% else %}
+    <div class="rounded-2xl border border-dashed p-12 text-center" style="background:var(--color-surface);border-color:var(--color-border)">
+      <h3 class="font-semibold text-lg" style="color:var(--color-text)">No children linked</h3>
+      <p class="text-sm mt-1" style="color:var(--color-text-muted)">Please contact your school administrator to link a student profile.</p>
+    </div>
+    {% endfor %}
+  </section>
 
   {% for child in children %}
   <section class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
@@ -25,16 +63,14 @@
       <div data-tab-panel="{{ child.student.id }}" data-tab-name="notifications">
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {% for card in child.notification_cards %}
-          <article class="aspect-square rounded-2xl border p-4 flex flex-col justify-between" style="background:var(--color-bg);border-color:var(--color-border)">
+          <article class="notification-card">
             <div>
               <p class="font-semibold text-base" style="color:var(--color-text)">{{ card.title }}</p>
               <p class="text-sm mt-2 line-clamp-4" style="color:var(--color-text-secondary)">{{ card.message }}</p>
             </div>
             <div class="space-y-3">
-              <p class="text-xs font-medium" style="color:var(--color-text-muted)">
-                {% if card.date.strftime is defined %}{{ card.date.strftime('%b %d, %Y') }}{% else %}{{ card.date }}{% endif %}
-              </p>
-              <a href="{{ card.url }}" class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold bg-primary-600 text-white">{{ card.action_label }}</a>
+              <p class="notification-card-date">{% if card.date.strftime is defined %}{{ card.date.strftime('%b %d, %Y') }}{% else %}{{ card.date }}{% endif %}</p>
+              <a href="{{ card.url }}" class="btn-primary w-full">{{ card.action_label }}</a>
             </div>
           </article>
           {% else %}
@@ -45,77 +81,81 @@
         </div>
       </div>
 
-      <div data-tab-panel="{{ child.student.id }}" data-tab-name="details" class="hidden">
+      <div {% if loop.first %}id="family-details"{% endif %} data-tab-panel="{{ child.student.id }}" data-tab-name="details" class="hidden">
         <form method="POST" action="/parent/student/update" class="grid lg:grid-cols-2 gap-6">
           <input type="hidden" name="student_id" value="{{ child.student.id }}">
-          <div class="rounded-2xl border p-5 space-y-4" style="background:var(--color-bg);border-color:var(--color-border)">
-            <h3 class="font-semibold text-base" style="color:var(--color-text)">Student Details</h3>
-            <div>
-              <label class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Blood Group</label>
-              <input type="text" name="blood_group" value="{{ child.student.blood_group or '' }}" class="input-field w-full" placeholder="e.g. O+">
+          <div class="detail-card">
+            <h3 class="detail-card-title">Student Details</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Blood Group</label>
+                <input type="text" name="blood_group" value="{{ child.student.blood_group or '' }}" class="input-field w-full" placeholder="e.g. O+">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Address</label>
+                <textarea name="address" rows="5" class="input-field w-full" placeholder="Student home address">{{ child.student.address or '' }}</textarea>
+              </div>
+              <button type="submit" class="btn-primary">Update Details</button>
             </div>
-            <div>
-              <label class="block text-sm font-semibold mb-2" style="color:var(--color-text)">Address</label>
-              <textarea name="address" rows="5" class="input-field w-full" placeholder="Student home address">{{ child.student.address or '' }}</textarea>
-            </div>
-            <button type="submit" class="btn-primary">Update Details</button>
           </div>
 
-          <div class="rounded-2xl border p-5 space-y-4" style="background:var(--color-bg);border-color:var(--color-border)">
-            <h3 class="font-semibold text-base" style="color:var(--color-text)">Academic Snapshot</h3>
-            <div>
-              <p class="text-sm font-semibold" style="color:var(--color-text)">Attendance</p>
-              <div class="flex gap-2 flex-wrap mt-3">
-                {% for att in child.attendance[:10] %}
-                <span class="w-9 h-9 rounded-xl inline-flex items-center justify-center {% if att.is_present %}bg-emerald-50 text-emerald-600{% else %}bg-red-50 text-red-600{% endif %}">
-                  {% if att.is_present %}P{% else %}A{% endif %}
-                </span>
-                {% else %}
-                <p class="text-sm" style="color:var(--color-text-muted)">No attendance records yet.</p>
-                {% endfor %}
-              </div>
-            </div>
-            <div>
-              <p class="text-sm font-semibold" style="color:var(--color-text)">Recent Marks</p>
-              <div class="mt-3 space-y-2">
-                {% for mark in child.marks[:4] %}
-                <div class="flex items-center justify-between rounded-xl border px-3 py-2" style="border-color:var(--color-border-light)">
-                  <span class="text-sm" style="color:var(--color-text-secondary)">{{ mark.exam.name if mark.exam else 'Exam' }}</span>
-                  <span class="text-sm font-semibold" style="color:var(--color-text)">{{ mark.marks_obtained|int }}/{{ mark.max_marks|int }}</span>
+          <div class="detail-card">
+            <h3 class="detail-card-title">Academic Snapshot</h3>
+            <div class="space-y-5">
+              <div>
+                <p class="text-sm font-semibold" style="color:var(--color-text)">Attendance</p>
+                <div class="flex gap-2 flex-wrap mt-3">
+                  {% for att in child.attendance[:10] %}
+                  <span class="w-9 h-9 rounded-xl inline-flex items-center justify-center {% if att.is_present %}bg-emerald-50 text-emerald-600{% else %}bg-red-50 text-red-600{% endif %}">
+                    {% if att.is_present %}P{% else %}A{% endif %}
+                  </span>
+                  {% else %}
+                  <p class="text-sm" style="color:var(--color-text-muted)">No attendance records yet.</p>
+                  {% endfor %}
                 </div>
-                {% else %}
-                <p class="text-sm" style="color:var(--color-text-muted)">No marks published yet.</p>
-                {% endfor %}
+              </div>
+              <div>
+                <p class="text-sm font-semibold" style="color:var(--color-text)">Recent Marks</p>
+                <div class="mt-3 space-y-2">
+                  {% for mark in child.marks[:4] %}
+                  <div class="flex items-center justify-between rounded-xl border px-3 py-2" style="border-color:var(--color-border-light)">
+                    <span class="text-sm" style="color:var(--color-text-secondary)">{{ mark.exam.name if mark.exam else 'Exam' }}</span>
+                    <span class="text-sm font-semibold" style="color:var(--color-text)">{{ mark.marks_obtained|int }}/{{ mark.max_marks|int }}</span>
+                  </div>
+                  {% else %}
+                  <p class="text-sm" style="color:var(--color-text-muted)">No marks published yet.</p>
+                  {% endfor %}
+                </div>
               </div>
             </div>
           </div>
         </form>
       </div>
 
-      <div data-tab-panel="{{ child.student.id }}" data-tab-name="contacts" class="hidden">
-        <div class="rounded-2xl border p-5" style="background:var(--color-bg);border-color:var(--color-border)">
-          <h3 class="font-semibold text-base mb-4" style="color:var(--color-text)">Contact Teachers</h3>
+      <div {% if loop.first %}id="family-contacts"{% endif %} data-tab-panel="{{ child.student.id }}" data-tab-name="contacts" class="hidden">
+        <div class="detail-card">
+          <h3 class="detail-card-title">Contact Teachers</h3>
           <div class="space-y-3">
             {% if child.teacher_contacts.class_teacher %}
-            <div class="flex items-center justify-between rounded-xl border px-4 py-3" style="border-color:var(--color-border-light)">
+            <div class="teacher-contact-row">
               <div>
                 <p class="font-semibold text-sm" style="color:var(--color-text)">{{ child.teacher_contacts.class_teacher.name }}</p>
                 <p class="text-xs mt-1" style="color:var(--color-text-muted)">Class Teacher</p>
               </div>
               {% if child.teacher_contacts.class_teacher.phone_number %}
-              <a href="{{ child.teacher_contacts.class_teacher.whatsapp_link }}" target="_blank" rel="noopener noreferrer" class="text-2xl" title="Chat on WhatsApp">📱</a>
+              <a href="{{ child.teacher_contacts.class_teacher.whatsapp_link }}" target="_blank" rel="noopener noreferrer" class="whatsapp-button">WhatsApp</a>
               {% endif %}
             </div>
             {% endif %}
 
             {% for teacher in child.teacher_contacts.subject_teachers %}
-            <div class="flex items-center justify-between rounded-xl border px-4 py-3" style="border-color:var(--color-border-light)">
+            <div class="teacher-contact-row">
               <div>
                 <p class="font-semibold text-sm" style="color:var(--color-text)">{{ teacher.subject }} - {{ teacher.name }}</p>
                 <p class="text-xs mt-1" style="color:var(--color-text-muted)">{{ teacher.phone_number }}</p>
               </div>
               {% if teacher.phone_number %}
-              <a href="{{ teacher.whatsapp_link }}" target="_blank" rel="noopener noreferrer" class="text-2xl" title="Chat on WhatsApp">📱</a>
+              <a href="{{ teacher.whatsapp_link }}" target="_blank" rel="noopener noreferrer" class="whatsapp-button">WhatsApp</a>
               {% endif %}
             </div>
             {% else %}
@@ -126,11 +166,6 @@
       </div>
     </div>
   </section>
-  {% else %}
-  <div class="rounded-2xl border border-dashed p-12 text-center" style="background:var(--color-surface);border-color:var(--color-border)">
-    <h3 class="font-semibold text-lg" style="color:var(--color-text)">No children linked</h3>
-    <p class="text-sm mt-1" style="color:var(--color-text-muted)">Please contact your school administrator to link a student profile.</p>
-  </div>
   {% endfor %}
 </div>
 {% endblock %}

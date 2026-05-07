@@ -1,0 +1,71 @@
+{% import "partials/icon.html" as icons %}
+{% set role_label = role|replace('_', ' ')|title if role else "Dashboard" %}
+<header class="app-topbar">
+  <div class="app-topbar__inner">
+    <a href="{{ logo_action.href if logo_action is defined else '/dashboard' }}" class="app-topbar__brand" aria-label="SchoolMS dashboard home">
+      <span class="app-topbar__brand-mark">
+        {{ icons.render_icon("school", "app-topbar__brand-icon") }}
+      </span>
+      <span class="app-topbar__brand-copy">
+        <span class="app-topbar__brand-title">SchoolMS</span>
+        <span class="app-topbar__brand-subtitle">{{ role_label }}</span>
+      </span>
+    </a>
+
+    <div class="app-topbar__main">
+      <nav class="app-topbar__nav" aria-label="Primary">
+        {% for item in nav_config.top_items %}
+        <a href="{{ item.href }}" class="app-topbar__nav-link" data-nav-link>
+          {{ icons.render_icon(item.icon, "app-topbar__nav-icon") }}
+          <span>{{ item.label }}</span>
+        </a>
+        {% endfor %}
+      </nav>
+
+      <div class="app-topbar__actions">
+        <button type="button" class="app-topbar__icon-btn md:hidden" data-menu-toggle="nav-drawer" aria-label="Open navigation menu">
+          {{ icons.render_icon("menu", "app-topbar__nav-icon") }}
+        </button>
+        {% if user %}
+        <div class="app-user-chip">
+          <div class="app-user-avatar">{{ user.name[0]|upper if user.name else "U" }}</div>
+          <div class="app-user-meta">
+            <p class="app-user-name">{{ user.name }}</p>
+            <p class="app-user-role">{{ role_label }}</p>
+          </div>
+        </div>
+        {% endif %}
+        <a href="/logout" class="btn-ghost-danger app-topbar__logout">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="nav-drawer" class="app-drawer hidden md:hidden">
+    <div class="app-drawer__panel">
+      <div class="app-drawer__header">
+        <p class="app-drawer__title">Navigation</p>
+        <button type="button" class="app-topbar__icon-btn" data-menu-toggle="nav-drawer" aria-label="Close navigation menu">
+          {{ icons.render_icon("menu", "app-topbar__nav-icon") }}
+        </button>
+      </div>
+      <div class="app-drawer__group">
+        {% for item in nav_config.top_items %}
+        <a href="{{ item.href }}" class="app-drawer__link" data-nav-link>
+          {{ icons.render_icon(item.icon, "app-topbar__nav-icon") }}
+          <span>{{ item.label }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% if nav_config.more_items %}
+      <div class="app-drawer__group">
+        {% for item in nav_config.more_items %}
+        <a href="{{ item.href }}" class="app-drawer__link" data-nav-link>
+          {{ icons.render_icon(item.icon, "app-topbar__nav-icon") }}
+          <span>{{ item.label }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</header>

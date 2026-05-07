@@ -3,110 +3,63 @@
 {% block page_title %}Super Admin Dashboard{% endblock %}
 {% block content %}
 <div class="fade-in space-y-6">
-
-  <!-- Header Actions -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <section class="launchpad-hero">
     <div>
-      <p class="text-sm" style="color:var(--color-text-muted)">Manage all schools and administrators across the network.</p>
-      <p class="text-xs mt-1 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-        Pending Fees: {{ pending_fee_count }} students
-      </p>
+      <p class="launchpad-hero__eyebrow">Network Control</p>
+      <h2 class="launchpad-hero__title">Manage every school from one launchpad</h2>
+      <p class="launchpad-hero__body">Open the tools you use most, then move through the rest from the compact menu without losing space to a sidebar.</p>
     </div>
-    <div class="flex gap-2">
-      <a href="/schools"
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white
-                bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800
-                transition-all shadow-sm shadow-primary-500/20 active:scale-[0.98]">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-        </svg>
-        Add School
-      </a>
-      <a href="/users/create-admin"
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border
-                hover:shadow-sm active:scale-[0.98]"
-         style="color:var(--color-text-secondary);border-color:var(--color-border);background:var(--color-surface)">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-        </svg>
-        Add Admin
-      </a>
+    <div class="launchpad-hero__stats">
+      <span class="launchpad-stat">{{ school_stats|length }} Schools</span>
+      <span class="launchpad-stat">{{ pending_fee_count }} Pending Fees</span>
     </div>
-  </div>
+  </section>
 
-  <!-- Stats Grid -->
+  {% for section in launchpad_sections %}
+    {% include "partials/launchpad_section.html" %}
+  {% endfor %}
+
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-    <div class="rounded-2xl border p-5 shadow-sm slide-up flex flex-col" style="background:var(--color-surface);border-color:var(--color-border)">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
-          </svg>
-        </div>
-        <p class="text-sm font-medium" style="color:var(--color-text-muted)">Total Schools</p>
-      </div>
-      <p class="text-3xl font-bold mt-auto" style="color:var(--color-text)">{{ school_stats|length }}</p>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm font-medium" style="color:var(--color-text-muted)">Total Schools</p>
+      <p class="text-3xl font-bold mt-3" style="color:var(--color-text)">{{ school_stats|length }}</p>
     </div>
-
-    <div class="rounded-2xl border p-5 shadow-sm slide-up flex flex-col" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:0.1s">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
-          </svg>
-        </div>
-        <p class="text-sm font-medium" style="color:var(--color-text-muted)">Total Staff</p>
-      </div>
-      <p class="text-3xl font-bold mt-auto" style="color:var(--color-text)">{{ school_stats|sum(attribute='user_count') }}</p>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm font-medium" style="color:var(--color-text-muted)">Total Staff</p>
+      <p class="text-3xl font-bold mt-3" style="color:var(--color-text)">{{ school_stats|sum(attribute='user_count') }}</p>
     </div>
-
-    <div class="rounded-2xl border p-5 shadow-sm slide-up flex flex-col" style="background:var(--color-surface);border-color:var(--color-border);animation-delay:0.2s">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
-          </svg>
-        </div>
-        <p class="text-sm font-medium" style="color:var(--color-text-muted)">Total Students</p>
-      </div>
-      <p class="text-3xl font-bold mt-auto" style="color:var(--color-text)">{{ school_stats|sum(attribute='student_count') }}</p>
+    <div class="rounded-2xl border p-5 shadow-sm" style="background:var(--color-surface);border-color:var(--color-border)">
+      <p class="text-sm font-medium" style="color:var(--color-text-muted)">Total Students</p>
+      <p class="text-3xl font-bold mt-3" style="color:var(--color-text)">{{ school_stats|sum(attribute='student_count') }}</p>
     </div>
   </div>
 
-  <!-- Schools Table -->
   <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
-    <div class="px-6 py-4 border-b flex items-center justify-between flex-wrap gap-3" style="border-color:var(--color-border)">
+    <div class="px-6 py-4 border-b flex items-center justify-between gap-3 flex-wrap" style="border-color:var(--color-border)">
       <h2 class="font-semibold text-base" style="color:var(--color-text)">Network Overview</h2>
       {% if school_stats %}
       <div class="relative">
-        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color:var(--color-text-muted)" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z"/>
-        </svg>
-        <input type="text" data-search="schools-table" placeholder="Search schools…"
-               class="input-field text-xs py-2" style="padding-left:2rem;width:200px">
+        <input type="text" data-search="schools-table" placeholder="Search schools…" class="input-field text-xs py-2" style="width:200px">
       </div>
       {% endif %}
     </div>
 
     {% if school_stats %}
     <div class="table-responsive">
-      <table class="w-full" id="schools-table">
+      <table class="w-full data-table" id="schools-table">
         <thead>
           <tr style="background:var(--color-bg)">
-            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">School Information</th>
-            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Staff Count</th>
-            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Student Count</th>
+            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">School</th>
+            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Staff</th>
+            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Students</th>
           </tr>
         </thead>
         <tbody class="divide-y" style="border-color:var(--color-border-light)">
           {% for item in school_stats %}
-          <tr class="transition-colors hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+          <tr>
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40
-                            flex items-center justify-center flex-shrink-0">
-                  <span class="text-sm font-bold text-primary-700 dark:text-primary-300">{{ item.school.name[0]|upper }}</span>
-                </div>
+                <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">{{ item.school.name[0]|upper }}</div>
                 <div>
                   <p class="font-medium text-sm" style="color:var(--color-text)">{{ item.school.name }}</p>
                   <p class="text-xs mt-0.5" style="color:var(--color-text-muted)">{{ item.school.address or 'Address not provided' }}</p>
@@ -121,24 +74,7 @@
       </table>
       <div id="schools-table-empty" class="hidden py-8 text-center text-sm" style="color:var(--color-text-muted)">No schools match your search.</div>
     </div>
-    {% else %}
-    <div class="py-16 text-center">
-      <div class="w-14 h-14 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mx-auto mb-4">
-        <svg class="w-7 h-7 text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
-        </svg>
-      </div>
-      <p class="font-semibold text-sm" style="color:var(--color-text)">No schools configured</p>
-      <p class="text-xs mt-1 mb-4" style="color:var(--color-text-muted)">Register your first school to begin building the network.</p>
-      <a href="/schools" class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400 transition-colors">
-        Add a school
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-        </svg>
-      </a>
-    </div>
     {% endif %}
   </div>
-
 </div>
 {% endblock %}

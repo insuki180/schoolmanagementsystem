@@ -1,0 +1,12 @@
+<section class="launchpad-section">
+  {% if section.title %}
+  <div class="launchpad-section__header">
+    <h2 class="launchpad-section__title">{{ section.title }}</h2>
+  </div>
+  {% endif %}
+  <div class="launchpad-grid">
+    {% for card in section.cards %}
+      {% include "partials/launchpad_card.html" %}
+    {% endfor %}
+  </div>
+</section>

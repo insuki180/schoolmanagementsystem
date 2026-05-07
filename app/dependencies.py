@@ -7,6 +7,7 @@ from app.database import get_db, AsyncSessionLocal
 from app.services.auth_service import decode_access_token
 from app.models.school import School
 from app.models.user import User, UserRole
+from app.services.navigation_service import build_role_navigation
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -49,6 +50,7 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         )
 
     request.state.user = user
+    request.state.nav_config = build_role_navigation(user.role.value)
     request.state.school_options = []
     request.state.active_school_id = None
 

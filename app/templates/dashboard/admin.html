@@ -1,183 +1,76 @@
 {% extends "base.html" %}
-{% block title %}School Dashboard — SchoolMS{% endblock %}
-{% block page_title %}School Dashboard{% endblock %}
+{% block title %}School Admin Dashboard — SchoolMS{% endblock %}
+{% block page_title %}School Admin Dashboard{% endblock %}
 {% block content %}
 <div class="fade-in space-y-6">
-
-  <!-- Header Actions -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <section class="launchpad-hero">
     <div>
-      <p class="text-sm" style="color:var(--color-text-muted)">Overview of all classes and performance</p>
-      <p class="text-xs mt-1 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
-        Pending Fees: {{ pending_fee_count }} students
-      </p>
+      <p class="launchpad-hero__eyebrow">School Operations</p>
+      <h2 class="launchpad-hero__title">Open the module you need and keep the rest one tap away</h2>
+      <p class="launchpad-hero__body">This home screen is designed for growing school workflows, so new features can slot in without bringing the old sidebar back.</p>
     </div>
-    <div class="flex flex-wrap gap-2">
-      <a href="/users/create-teacher"
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white
-                bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800
-                transition-all shadow-sm shadow-primary-500/20 active:scale-[0.98]">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-        </svg>
-        Add Teacher
-      </a>
-      <a href="/users/teachers"
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border
-                hover:shadow-sm active:scale-[0.98]"
-         style="color:var(--color-text-secondary);border-color:var(--color-border);background:var(--color-surface)">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75A2.25 2.25 0 1112.75 6.75a2.25 2.25 0 014.5 0ZM6.75 9a2.25 2.25 0 100-4.5A2.25 2.25 0 006.75 9Zm10.5 9.75H20.25a.75.75 0 00.75-.75v-.621a4.125 4.125 0 00-4.125-4.125h-1.312m-8.812 5.496H3.75a.75.75 0 01-.75-.75v-.621A4.125 4.125 0 017.125 13.25h1.313m7.125 5.246v-.621a4.125 4.125 0 00-4.125-4.125h-1.875a4.125 4.125 0 00-4.125 4.125v.621m10.125 0a.75.75 0 01-.75.75H8.438a.75.75 0 01-.75-.75" />
-        </svg>
-        Manage Teachers
-      </a>
-      <a href="/classes"
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border
-                hover:shadow-sm active:scale-[0.98]"
-         style="color:var(--color-text-secondary);border-color:var(--color-border);background:var(--color-surface)">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-        </svg>
-        Add Class
-      </a>
-      <a href="/exams"
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border
-                hover:shadow-sm active:scale-[0.98]"
-         style="color:var(--color-text-secondary);border-color:var(--color-border);background:var(--color-surface)">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-        </svg>
-        Add Exam
-      </a>
+    <div class="launchpad-hero__stats">
+      <span class="launchpad-stat">{{ class_stats|length }} Classes</span>
+      <span class="launchpad-stat">{{ teachers|length }} Teachers</span>
+      <span class="launchpad-stat">{{ pending_fee_count }} Pending Fees</span>
     </div>
-  </div>
+  </section>
 
-  <!-- Class Overview Table -->
-  <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
-    <div class="px-6 py-4 border-b flex items-center justify-between gap-3 flex-wrap" style="border-color:var(--color-border)">
-      <div class="flex items-center gap-2">
-        <svg class="w-5 h-5" style="color:#6366f1" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-        </svg>
+  {% for section in launchpad_sections %}
+    {% include "partials/launchpad_section.html" %}
+  {% endfor %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+      <div class="px-6 py-4 border-b flex items-center justify-between gap-3 flex-wrap" style="border-color:var(--color-border)">
         <h2 class="font-semibold text-base" style="color:var(--color-text)">Class Overview</h2>
+        {% if class_stats %}
+        <input type="text" data-search="class-table" placeholder="Search classes…" class="input-field text-xs py-2" style="width:180px">
+        {% endif %}
       </div>
       {% if class_stats %}
-      <div class="relative">
-        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color:var(--color-text-muted)" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803a7.5 7.5 0 0010.607 10.607z"/>
-        </svg>
-        <input type="text" data-search="class-table" placeholder="Search classes…"
-               class="input-field text-xs py-2" style="padding-left:2rem;width:180px">
+      <div class="table-responsive">
+        <table class="w-full data-table" id="class-table">
+          <thead>
+            <tr style="background:var(--color-bg)">
+              <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Class</th>
+              <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Students</th>
+              <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Attendance</th>
+              <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Avg Marks</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y" style="border-color:var(--color-border-light)">
+            {% for item in class_stats %}
+            <tr>
+              <td class="px-6 py-4"><a href="/classes/{{ item.class.id }}" class="font-semibold text-sm" style="color:var(--color-text)">{{ item.class.name }}</a></td>
+              <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ item.student_count }}</td>
+              <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ item.attendance_pct }}%</td>
+              <td class="px-6 py-4 text-center text-sm" style="color:var(--color-text-secondary)">{{ item.avg_marks }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div id="class-table-empty" class="hidden py-8 text-center text-sm" style="color:var(--color-text-muted)">No classes match your search.</div>
       </div>
       {% endif %}
     </div>
 
-    {% if class_stats %}
-    <div class="table-responsive">
-      <table class="w-full" id="class-table">
-        <thead>
-          <tr style="background:var(--color-bg)">
-            <th class="text-left px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Class</th>
-            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Students</th>
-            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Attendance</th>
-            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Avg Marks</th>
-            <th class="text-center px-6 py-3 text-xs font-semibold uppercase tracking-wider" style="color:var(--color-text-muted)">Action</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y" style="border-color:var(--color-border-light)">
-          {% for item in class_stats %}
-          <tr class="transition-colors cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/10"
-              onclick="window.location='/classes/{{ item.class.id }}'">
-            <td class="px-6 py-4">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40
-                            flex items-center justify-center flex-shrink-0">
-                  <span class="text-xs font-bold text-primary-700 dark:text-primary-300">{{ item.class.name[0]|upper }}</span>
-                </div>
-                <span class="font-semibold text-sm" style="color:var(--color-text)">{{ item.class.name }}</span>
-              </div>
-            </td>
-            <td class="px-6 py-4 text-center text-sm font-medium" style="color:var(--color-text-secondary)">
-              {{ item.student_count }}
-            </td>
-            <td class="px-6 py-4 text-center">
-              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
-                {% if item.attendance_pct >= 75 %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
-                {% elif item.attendance_pct >= 50 %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
-                {% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% endif %}">
-                {{ item.attendance_pct }}%
-              </span>
-            </td>
-            <td class="px-6 py-4 text-center text-sm font-semibold" style="color:var(--color-text)">
-              {{ item.avg_marks }}
-            </td>
-            <td class="px-6 py-4 text-center">
-              <a href="/classes/{{ item.class.id }}"
-                 class="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
-                 onclick="event.stopPropagation()">
-                View
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-                </svg>
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <div id="class-table-empty" class="hidden py-8 text-center text-sm" style="color:var(--color-text-muted)">No classes match your search.</div>
-    </div>
-    {% else %}
-    <div class="py-16 text-center">
-      <div class="w-14 h-14 rounded-2xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center mx-auto mb-4">
-        <svg class="w-7 h-7 text-primary-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-        </svg>
-      </div>
-      <p class="font-semibold text-sm" style="color:var(--color-text)">No classes yet</p>
-      <p class="text-xs mt-1 mb-4" style="color:var(--color-text-muted)">Create your first class to get started</p>
-      <a href="/classes" class="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400 transition-colors">
-        Create a class
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
-        </svg>
-      </a>
-    </div>
-    {% endif %}
-  </div>
-
-  <!-- Recent Notifications -->
-  <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
-    <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border)">
-      <div class="flex items-center gap-2">
-        <svg class="w-5 h-5" style="color:#6366f1" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-        </svg>
+    <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:var(--color-surface);border-color:var(--color-border)">
+      <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color:var(--color-border)">
         <h2 class="font-semibold text-base" style="color:var(--color-text)">Recent Notifications</h2>
+        <a href="/notifications" class="text-xs font-semibold text-primary-600 hover:text-primary-800">View all</a>
       </div>
-      <a href="/notifications" class="text-xs font-semibold text-primary-600 hover:text-primary-800 dark:text-primary-400 transition-colors">View all →</a>
-    </div>
-    <div class="divide-y" style="border-color:var(--color-border-light)">
-      {% for notif in recent_notifications %}
-      <div class="px-6 py-4 flex items-start gap-3">
-        <div class="w-2 h-2 rounded-full bg-primary-500 mt-1.5 flex-shrink-0"></div>
-        <div class="min-w-0 flex-1">
-          <p class="text-sm font-medium truncate" style="color:var(--color-text)">{{ notif.title }}</p>
-          <p class="text-xs mt-0.5" style="color:var(--color-text-muted)">
-            {{ notif.created_at.strftime('%b %d, %Y at %H:%M') if notif.created_at else '' }}
-          </p>
+      <div class="divide-y" style="border-color:var(--color-border-light)">
+        {% for notif in recent_notifications %}
+        <div class="px-6 py-4">
+          <p class="text-sm font-medium" style="color:var(--color-text)">{{ notif.title }}</p>
+          <p class="text-xs mt-1" style="color:var(--color-text-muted)">{{ notif.created_at.strftime('%b %d, %Y at %H:%M') if notif.created_at else '' }}</p>
         </div>
+        {% else %}
+        <div class="px-6 py-10 text-center text-sm" style="color:var(--color-text-muted)">No notifications yet</div>
+        {% endfor %}
       </div>
-      {% else %}
-      <div class="py-10 text-center text-sm" style="color:var(--color-text-muted)">
-        <svg class="w-8 h-8 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-        </svg>
-        No notifications yet
-      </div>
-      {% endfor %}
     </div>
   </div>
-
 </div>
 {% endblock %}
